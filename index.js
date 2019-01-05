@@ -804,7 +804,7 @@ export default class App extends Component {
   }
 
   renderPage = (token, showAll, dialog, datas, report, reg, update) => {
-    window.scroll(0, 0)
+    if (typeof window !== "undefined") window.scroll(0, 0)
     if (token) {
       if (dialog) return this.renderSelectMonthYear()
       else if (report) return this.renderReport(datas)
