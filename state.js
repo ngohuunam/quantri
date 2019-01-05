@@ -24,7 +24,7 @@ const state = {
   nuoc: '',
   nha: '',
   deposit: '',
-  ver: '20181209.1227',
+  ver: '20190105.2045',
 }
 
 export default state
