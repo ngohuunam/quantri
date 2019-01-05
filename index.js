@@ -379,7 +379,7 @@ export default class App extends Component {
         <button onClick={() => this.setState({ showAll: true })}>DANH SÁCH PHÒNG</button>
         <button
           name="reg"
-          className={!bill || (bill & bill.out && bill.thanhtoan) ? '' : 'hidden'}
+          // className={!bill || (bill & bill.out && bill.thanhtoan) ? '' : 'hidden'}
           onClick={this.btnClick}
         >
           NHẬN PHÒNG
