@@ -14,7 +14,6 @@ const state = {
   dialog: false,
   token: '',
   report: false,
-  newActive: false,
   reg: false,
   update: false,
   name: '',
@@ -24,7 +23,11 @@ const state = {
   nuoc: '',
   nha: '',
   deposit: '',
-  ver: '20190105.2118',
+  thukhac: '',
+  tienthukhac: '',
+  chi: '',
+  tienchi: '',
+  ver: '20190105.2312',
 }
 
 export default state

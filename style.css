@@ -54,7 +54,7 @@ input {
   border-bottom: 1px solid rgb(204, 204, 230);
   background: none;
   outline: none;
-  font-size: 1.7rem;
+  font-size: 1.3rem;
   transition: all 0.1s ease-in-out;
 }
 input {
@@ -64,7 +64,8 @@ select {
   color: rgb(0, 0, 128);
   cursor: pointer;
 }
-input:focus {
+input:focus,
+input:not(:placeholder-shown) {
   border-bottom: 1px solid rgb(0, 0, 128);
   color: rgb(0, 0, 128);
 }
@@ -105,7 +106,7 @@ button {
   box-sizing: border-box;
   width: 100%;
   border: none;
-  padding: 1rem;
+  padding: 0.9rem;
   margin: 0 0 0.4rem 0;
   font-size: 1.1rem;
   font-weight: bold;
@@ -152,7 +153,7 @@ button.invalid:disabled {
 }
 button.large {
   /* width: 60%; */
-  padding: 1.8rem 0.6rem;
+  padding: 1.6rem 0.6rem;
   font-size: 2.5rem;
 }
 
@@ -227,7 +228,7 @@ button.large {
   margin-bottom: 16px;
 }
 .flex.col > div > label {
-  font-size: 1.7rem;
+  font-size: 1.3rem;
   flex: 0 0 40%;
 }
 .flex.col > div > div {

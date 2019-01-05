@@ -59,11 +59,18 @@ export default class App extends Component {
   onInput = event => {
     const name = event.target.name
     const value = event.target.value
+    // console.log('name', name)
+    // console.log('value', value)
     switch (name) {
       case 'dien':
       case 'nuoc':
       case 'nha':
       case 'deposit':
+      case 'tienthukhac':
+        this.setState({ [name]: Number(value) })
+        break
+
+      case 'tienchi':
         this.setState({ [name]: Number(value) })
         break
 
@@ -133,15 +140,21 @@ export default class App extends Component {
         name: this.state.name,
         phone: this.state.phone,
         email: this.state.email,
-        // dienkytruoc: this.state.datas[this.state.roomIndex].bills[0].dien,
         dien: this.state.dien,
-        // nuockytruoc: this.state.datas[this.state.roomIndex].bills[0].nuoc,
         nuoc: this.state.nuoc,
         nha: this.state.nha,
         month: this.state.month,
         year: this.state.year,
-        preout: info,
         deposit: this.state.deposit,
+        khac: {
+          khoan: this.state.thukhac,
+          tien: typeof this.state.tienthukhac === 'number' ? this.state.tienthukhac : 0,
+        },
+        chi: {
+          khoan: this.state.chi,
+          tien: typeof this.state.tienchi === 'number' ? 0 - this.state.tienchi : 0,
+        },
+        preout: info,
         khoan: 'Tiền cọc',
       })
       console.log(body)
@@ -262,12 +275,14 @@ export default class App extends Component {
     )
   }
 
-  renderOtherFee = khac => {
-    if (khac.tien)
+  renderOtherFee = (thuchi, isChi) => {
+    if (thuchi && thuchi.tien)
       return (
         <div class="total">
-          <div>{khac.khoan ? khac.khoan.toUpperCase() : 'KHÁC'}</div>
-          <div>{khac.tien.toLocaleString('vi')} đ</div>
+          <div>
+            {isChi ? 'CHI' : 'THU'} {thuchi.khoan.toUpperCase()}
+          </div>
+          <div>{thuchi.tien.toLocaleString('vi')} đ</div>
         </div>
       )
   }
@@ -317,6 +332,7 @@ export default class App extends Component {
               <div>{bill.nuoc.thanhtien.toLocaleString('vi')} đ</div>
             </div>
             {this.renderOtherFee(bill.khac)}
+            {this.renderOtherFee(bill.chi, true)}
             <div class="total">
               <div>TIỀN RÁC</div>
               <div>{bill.rac.toLocaleString('vi')} đ</div>
@@ -379,7 +395,7 @@ export default class App extends Component {
         <button onClick={() => this.setState({ showAll: true })}>DANH SÁCH PHÒNG</button>
         <button
           name="reg"
-          // className={!bill || (bill & bill.out && bill.thanhtoan) ? '' : 'hidden'}
+          className={!bill || (bill && bill.out && bill.thanhtoan) ? '' : 'hidden'}
           onClick={this.btnClick}
         >
           NHẬN PHÒNG
@@ -628,12 +644,11 @@ export default class App extends Component {
         <div class="flex col">
           {this.renderInput('Điện', 'number', 'dien', 'Số điện mới')}
           {this.renderInput('Nước', 'number', 'nuoc', 'Số nước mới')}
-          {this.renderInput(
-            'Nhà',
-            'number',
-            'nha',
-            `${this.state.datas[this.state.roomIndex].bills[0].nha}`,
-          )}
+          {this.renderInput('Nhà', 'number', 'nha', `Tiền nhà tháng này`)}
+          {this.renderInput('Thu khác', 'text', 'thukhac', 'Tên khoản thu')}
+          {this.renderInput('Tiền thu', 'number', 'tienthukhac', 'Số tiền thu')}
+          {this.renderInput('Khoản chi', 'text', 'chi', 'Tên khoản chi')}
+          {this.renderInput('Tiền chi', 'number', 'tienchi', 'Số tiền chi')}
         </div>
         <button name="update" onClick={this.btnClick}>
           CẬP NHẬT
@@ -663,6 +678,10 @@ export default class App extends Component {
           {this.renderInput('Điện', 'number', 'dien', 'Số điện')}
           {this.renderInput('Nước', 'number', 'nuoc', 'Số nước')}
           {this.renderInput('Cọc', 'number', 'deposit')}
+          {this.renderInput('Thu khác', 'text', 'thukhac', 'Tên khoản thu')}
+          {this.renderInput('Tiền thu', 'number', 'tienthukhac', 'Số tiền thu')}
+          {this.renderInput('Khoản chi', 'text', 'chi', 'Tên khoản chi')}
+          {this.renderInput('Tiền chi', 'number', 'tienchi', 'Số tiền chi')}
         </div>
         <button name="in" onClick={this.btnClick} disabled={!this.validateRegistration()}>
           THÊM NGƯỜI MỚI
