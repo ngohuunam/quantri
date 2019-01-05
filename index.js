@@ -377,7 +377,11 @@ export default class App extends Component {
           </button>
         </div>
         <button onClick={() => this.setState({ showAll: true })}>DANH SÁCH PHÒNG</button>
-        <button name="reg" className={!bill ? '' : 'hidden'} onClick={this.btnClick}>
+        <button
+          name="reg"
+          className={!bill || (bill & bill.out && bill.thanhtoan) ? '' : 'hidden'}
+          onClick={this.btnClick}
+        >
           NHẬN PHÒNG
         </button>
         <button
@@ -473,7 +477,7 @@ export default class App extends Component {
 
   renderRoomGeneralInfo = bills => {
     const infos = bills.map(bill =>
-      this.buttonStatus(bill).valid ? `\n${bill.tongcong.toLocaleString('vi')}` : ''
+      this.buttonStatus(bill).valid ? `\n${bill.tongcong.toLocaleString('vi')}` : '',
     )
     return infos.join('')
   }
@@ -628,7 +632,7 @@ export default class App extends Component {
             'Nhà',
             'number',
             'nha',
-            `${this.state.datas[this.state.roomIndex].bills[0].nha}`
+            `${this.state.datas[this.state.roomIndex].bills[0].nha}`,
           )}
         </div>
         <button name="update" onClick={this.btnClick}>
@@ -804,7 +808,7 @@ export default class App extends Component {
   }
 
   renderPage = (token, showAll, dialog, datas, report, reg, update) => {
-    if (typeof window !== "undefined") window.scroll(0, 0)
+    if (typeof window !== 'undefined') window.scroll(0, 0)
     if (token) {
       if (dialog) return this.renderSelectMonthYear()
       else if (report) return this.renderReport(datas)
