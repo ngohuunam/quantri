@@ -142,6 +142,9 @@ button.out {
 button.empty {
   background-color: rgb(187, 187, 187);
 }
+button.deposited {
+  background-color: rgb(137, 0, 201);
+}
 button.empty:disabled,
 button.done:disabled,
 button.out:disabled,

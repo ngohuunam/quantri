@@ -16,7 +16,8 @@ export default class App extends Component {
     const _MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     const DATE = new Date()
     const toDay = DATE.getDate()
-    let currentMonth = DATE.getMonth() + toDay > 5 ? 1 : 0
+    const monthIndex = DATE.getMonth()
+    let currentMonth = monthIndex + toDay > 5 ? 1 : 0
     const currentYear = DATE.getFullYear()
     let MONTHS
     if (year === 2018) {
@@ -52,7 +53,7 @@ export default class App extends Component {
     const token = localStorage.getItem('adminToken')
     if (token) {
       this.setState({ token: token })
-      this.login(token)
+      this.login()
     }
   }
 
@@ -87,45 +88,63 @@ export default class App extends Component {
     event.preventDefault()
     const eventName = event.target.name
     switch (eventName) {
-      case 'login':
-      case 'dialogok':
+      case 'deposit-btn':
+        this.setState({ onlyDeposit: true, reg: true })
+        break
+      case 'close-dialog-btn':
+        this.setState({ dialog: false })
+        break
+      case 'report-btn':
+        this.setState({ report: true })
+        break
+      case 'show-all-btn':
+        this.setState({ showAll: true })
+        break
+      case 'login-btn':
+      case 'dialog-ok-btn':
         this.login()
         break
-      case 'next':
+      case 'next-btn':
         if (this.state.roomIndex > -1 && this.state.roomIndex < this.state.datas.length - 1)
           this.setState({ roomIndex: this.state.roomIndex + 1 })
         else this.setState({ roomIndex: 0 })
         break
-      case 'prev':
+      case 'prev-btn':
         if (this.state.roomIndex) this.setState({ roomIndex: this.state.roomIndex - 1 })
         else this.setState({ roomIndex: this.state.datas.length - 1 })
         break
-      case 'out':
-      case 'purchase':
-        this.setState({ confirm: eventName })
+      case 'out-btn':
+      case 'purchase-btn':
+        this.setState({ confirm: eventName.slice(0, -4) })
         break
-      case 'ok':
+      case 'ok-btn':
         this.confirmAction(this.state.confirm)
         break
-      case 'cancel':
-        this.setState({ confirm: '', reg: false })
+      case 'reg-cancel-btn':
+        this.setState({ onlyDeposit: false, reg: false })
         break
-      case 'reg':
+      case 'reg-btn':
         this.setState({
           reg: true,
           dien: 0,
           nuoc: 0,
         })
         break
-      case 'bill-out':
+      case 'bill-out-btn':
         this.confirmAction('update', 'out')
         break
-      case 'bill-out-cancel':
+      case 'bill-out-cancel-btn':
         this.confirmAction('update', 'cancel')
         break
-      case 'in':
-      case 'update':
-        this.confirmAction(eventName)
+      case 'deposited-btn':
+      case 'in-btn':
+        this.confirmAction(eventName.slice(0, -4))
+        break
+      case 'update-confirm-btn':
+        this.confirmAction('update')
+        break
+      case 'update-cancel-btn':
+        this.setState({ update: false })
         break
     }
   }
@@ -146,6 +165,7 @@ export default class App extends Component {
         month: this.state.month,
         year: this.state.year,
         deposit: this.state.deposit,
+        onlyDeposit: this.state.onlyDeposit,
         khac: {
           khoan: this.state.thukhac,
           tien: typeof this.state.tienthukhac === 'number' ? this.state.tienthukhac : 0,
@@ -155,7 +175,6 @@ export default class App extends Component {
           tien: typeof this.state.tienchi === 'number' ? 0 - this.state.tienchi : 0,
         },
         preout: info,
-        khoan: 'Tiền cọc',
       })
       console.log(body)
       this.setState({ loading: true, notice: 'Đang xác nhận...' })
@@ -182,6 +201,7 @@ export default class App extends Component {
                   newActive: json.new,
                   reg: false,
                   update: false,
+                  onlyDeposit: false,
                   dien: json.dien,
                   nuoc: json.nuoc,
                 })
@@ -196,17 +216,17 @@ export default class App extends Component {
     }
   }
 
-  login = token => {
+  login = () => {
     if (this.state.sthChanged) {
       const body = JSON.stringify({
         room: '123',
         pass: this.state.pass,
-        token: token || this.state.token,
+        token: this.state.token,
         month: this.state.month,
         year: this.state.year,
       })
       console.log('fetch body', body)
-      if (token) this.setState({ loading: true, notice: 'Đang tải dữ liệu...' })
+      if (this.state.token) this.setState({ loading: true, notice: 'Đang tải dữ liệu...' })
       else this.setState({ loading: true, notice: 'Đang đăng nhập...' })
       fetch(remote + '/chunha', {
         method: 'post',
@@ -289,7 +309,7 @@ export default class App extends Component {
 
   renderBill = bill => {
     if (!bill) return <h1>PHÒNG TRỐNG</h1>
-    else if (bill.tongcong) {
+    else if (bill.deposit || bill.tongcong) {
       return (
         <div class="bill">
           <div class="table">
@@ -331,6 +351,7 @@ export default class App extends Component {
               <div>TIỀN NƯỚC</div>
               <div>{bill.nuoc.thanhtien.toLocaleString('vi')} đ</div>
             </div>
+            {this.renderOtherFee({ khoan: 'CỌC', tien: bill.deposit })}
             {this.renderOtherFee(bill.khac)}
             {this.renderOtherFee(bill.chi, true)}
             <div class="total">
@@ -361,59 +382,65 @@ export default class App extends Component {
     return (
       <div class="app">
         <h2>{mess}</h2>
-        <button name="ok" class="large" onClick={this.btnClick}>
-          OK
-        </button>
-        <button name="cancel" class="large" onClick={this.btnClick}>
-          HỦY
-        </button>
+        {this.renderButtons(['ok', 'cancel'], 'large', ['OK', 'HỦY'])}
         {this.renderLoading()}
       </div>
     )
   }
 
+  renderButton = (name, className, text, action, isDisabled) => {
+    if (className === 'hidden') return
+    const onClickAction = action || this.btnClick
+    return (
+      <button name={name + '-btn'} class={className} onClick={onClickAction} disabled={isDisabled}>
+        {text}
+      </button>
+    )
+  }
+
+  renderButtons = (names, classNames, texts, actions, isDisableds) => {
+    return names.map((name, idx) => {
+      const action = actions && actions.length ? actions[idx] : actions
+      const isDisabled = isDisableds && isDisableds.length ? isDisableds[idx] : false
+      const btnClass = classNames && classNames.length ? classNames[idx] : classNames
+      const text = texts[idx]
+      return this.renderButton(name, btnClass, text, action, isDisabled)
+    })
+  }
+
   renderRoomButton = (bill, prev, next) => {
+    const btnName = bill.out ? 'out' : 'purchase'
+    const mainBtnStatus = this.buttonStatus(bill)
+    const btnClass = mainBtnStatus.className
+    const isDisabled = mainBtnStatus.disabled
+    const btnText = mainBtnStatus.label
+    const regBtnClass = !bill || bill.onlyDeposit || (bill && bill.out && bill.thanhtoan) ? '' : 'hidden'
+    const depositBtnClass = !bill || (bill && bill.out && bill.thanhtoan && !bill.deposit) ? '' : 'hidden'
+    const updateBtnClass = bill ? '' : 'hidden'
+    const updateBtnAction = () =>
+      this.setState({
+        update: true,
+        dien: bill.dien.sokynay || bill.dien.sokytruoc,
+        nuoc: bill.nuoc.sokynay || bill.nuoc.sokytruoc,
+        nha: '',
+      })
     return (
       <div>
         {this.renderBill(bill)}
         <div class="btnGroup">
-          <button name="prev" onClick={this.btnClick}>
-            {prev.room}
-          </button>
-          <button
-            name={bill.out ? 'out' : 'purchase'}
-            onClick={this.btnClick}
-            className={this.buttonStatus(bill).className}
-            disabled={this.buttonStatus(bill).disabled}
-          >
-            {this.buttonStatus(bill).label}
-          </button>
-          <button name="next" onClick={this.btnClick}>
-            {next.room}
-          </button>
+          {this.renderButtons(['prev', btnName, 'next'], ['', btnClass, ''], [prev.room, btnText, next.room], '', [
+            false,
+            isDisabled,
+            false,
+          ])}
         </div>
-        <button onClick={() => this.setState({ showAll: true })}>DANH SÁCH PHÒNG</button>
-        <button
-          name="reg"
-          className={!bill || (bill && bill.out && bill.thanhtoan) ? '' : 'hidden'}
-          onClick={this.btnClick}
-        >
-          NHẬN PHÒNG
-        </button>
-        <button
-          disabled={bill.thanhtoan}
-          className={bill ? '' : 'hidden'}
-          onClick={() =>
-            this.setState({
-              update: true,
-              dien: bill.dien.sokynay || bill.dien.sokytruoc,
-              nuoc: bill.nuoc.sokynay || bill.nuoc.sokytruoc,
-              nha: '',
-            })
-          }
-        >
-          CẬP NHẬT
-        </button>
+        {this.renderButtons(
+          ['show-all', 'reg', 'deposit', 'update'],
+          ['', regBtnClass, depositBtnClass, updateBtnClass],
+          ['DANH SÁCH PHÒNG', 'NHẬN PHÒNG', 'ĐẶT CỌC', 'CẬP NHẬT'],
+          ['', '', '', updateBtnAction],
+          [false, false, false, bill.thanhtoan],
+        )}
       </div>
     )
   }
@@ -450,25 +477,19 @@ export default class App extends Component {
   }
 
   buttonStatus = bill => {
-    if (!bill)
-      return {
-        label: 'TRỐNG',
-        className: 'empty',
-        empty: true,
-      }
-    else
-      return {
-        label: bill.tongcong
+    return {
+      label:
+        bill.deposit || bill.tongcong
           ? bill.thanhtoan
             ? `ĐÃ THU${bill.out ? ' (TRỐNG)' : ''}`
             : bill.out
             ? 'BẤM ĐỂ THU VÀ TRẢ PHÒNG'
             : 'BẤM ĐỂ THU'
           : 'CHƯA CÓ DỮ LIỆU',
-        className: bill.tongcong ? (bill.thanhtoan ? (bill.out ? 'out' : 'done') : '') : 'invalid',
-        valid: bill.tongcong,
-        disabled: !bill.tongcong || (bill.tongcong && bill.thanhtoan),
-      }
+      className: bill.tongcong ? (bill.thanhtoan ? (bill.out ? 'out' : 'done') : '') : 'invalid',
+      valid: bill.deposit || bill.tongcong,
+      disabled: !bill.tongcong || (bill.tongcong && bill.thanhtoan),
+    }
   }
 
   calculateTotalAmount = () => {
@@ -491,11 +512,10 @@ export default class App extends Component {
     return amount
   }
 
-  renderRoomGeneralInfo = bills => {
-    const infos = bills.map(bill =>
-      this.buttonStatus(bill).valid ? `\n${bill.tongcong.toLocaleString('vi')}` : '',
-    )
-    return infos.join('')
+  renderRoomGeneralInfo = (room, bills) => {
+    const infos = bills.map(bill => `\n${bill.tongcong ? bill.tongcong.toLocaleString('vi') : ''}`)
+    const text = room + '\n\r' + infos.join('')
+    return text
   }
 
   renderListRoomsTable = () => {
@@ -510,17 +530,7 @@ export default class App extends Component {
       'TC đã thu',
       'TC còn phải thu',
     ]
-    const value = [
-      'inTotal',
-      'in',
-      'inLeft',
-      'outTotal',
-      'out',
-      'outLeft',
-      'grandTotal',
-      'current',
-      'totalLeft',
-    ]
+    const value = ['inTotal', 'in', 'inLeft', 'outTotal', 'out', 'outLeft', 'grandTotal', 'current', 'totalLeft']
     return (
       <div class="general-income">
         {labels.map((label, idx) => {
@@ -547,23 +557,19 @@ export default class App extends Component {
         </button>
         <div class="list">
           {datas.map((data, idx) => {
-            return (
-              <button
-                name={idx}
-                className={this.buttonStatus(data.bills[0]).className}
-                onClick={() => this.setState({ roomIndex: idx, showAll: false })}
-              >
-                {data.room}
-                <br />
-                {this.renderRoomGeneralInfo(data.bills)}
-              </button>
-            )
+            const action = () => this.setState({ roomIndex: idx, showAll: false })
+            if (data.bills.length) {
+              const text = this.renderRoomGeneralInfo(data.room, data.bills)
+              const className = this.buttonStatus(data.bills[0]).className
+              return this.renderButton(idx, className, text, action)
+            } else if (!data.filled && data.deposit) {
+              const text = `${data.room}\n\rCọc: ${data.deposit.tien.toLocaleString('vi')}`
+              return this.renderButton(idx, 'deposited', text, action)
+            } else return this.renderButton(idx, 'empty', `${data.room}`, action)
           })}
         </div>
         {this.renderListRoomsTable()}
-        <button name="report" class="mar-top-8px" onClick={() => this.setState({ report: true })}>
-          TỔNG HỢP THÁNG {this.state.month} - {this.state.year}
-        </button>
+        {this.renderButton('report', 'mar-top-8px', `TỔNG HỢP THÁNG ${this.state.month} - ${this.state.year}`)}
       </div>
     )
   }
@@ -576,12 +582,7 @@ export default class App extends Component {
           {this.renderSelect('Năm', 'year', 'onYearSelect')}
           {this.renderSelect('Tháng', 'month', 'onMonthSelect')}
         </div>
-        <button name="dialogok" class="large" onClick={this.btnClick}>
-          OK
-        </button>
-        <button name="closedialog" class="large" onClick={() => this.setState({ dialog: false })}>
-          HỦY
-        </button>
+        {this.renderButtons(['dialog-ok', 'close-dialog'], 'large', ['OK', 'HỦY'])}
         {this.renderLoading()}
       </div>
     )
@@ -605,16 +606,29 @@ export default class App extends Component {
       <div class="flex align-items-end">
         <label for={name}>{label.toUpperCase()}</label>
         <div>
-          <input
-            type={type}
-            name={name}
-            value={this.state[name]}
-            placeholder={placeholder ? placeholder : label}
-            onInput={this.onInput}
-          />
+          <input type={type} name={name} value={this.state[name]} placeholder={placeholder ? placeholder : label} onInput={this.onInput} />
         </div>
       </div>
     )
+  }
+
+  renderInputs = (labels, types, names, placeholders) => {
+    return names.map((name, idx) => {
+      return (
+        <div class="flex align-items-end">
+          <label for={name}>{labels[idx].toUpperCase()}</label>
+          <div>
+            <input
+              type={types[idx]}
+              name={name}
+              value={this.state[name]}
+              placeholder={placeholders[idx] || labels[idx]}
+              onInput={this.onInput}
+            />
+          </div>
+        </div>
+      )
+    })
   }
 
   validateRegistration = onlyUpdate => {
@@ -637,62 +651,78 @@ export default class App extends Component {
     return valid
   }
 
+  renderInputThuChiKhac = () => {
+    return this.renderInputs(
+      ['Thu khác', 'Tiền thu', 'Khoản chi', 'Tiền chi'],
+      ['text', 'number', 'text', 'number'],
+      ['thukhac', 'tienthukhac', 'chi', 'tienchi'],
+      ['Khoản thu', 'Tiền thu', 'Khoản chi', 'Tiền chi'],
+    )
+  }
+
   renderBillUpdate = () => {
+    const billOutBtnInfo = this.state.datas[this.state.roomIndex].bills[0].out
+      ? { name: 'bill-out-cancel', text: 'HUỶ TRẢ PHÒNG' }
+      : { name: 'bill-out', text: 'TRẢ PHÒNG' }
     return (
       <div class="app">
         <h1> Cập Nhật </h1>
         <div class="flex col">
-          {this.renderInput('Điện', 'number', 'dien', 'Số điện mới')}
-          {this.renderInput('Nước', 'number', 'nuoc', 'Số nước mới')}
-          {this.renderInput('Nhà', 'number', 'nha', `Tiền nhà tháng này`)}
-          {this.renderInput('Thu khác', 'text', 'thukhac', 'Tên khoản thu')}
-          {this.renderInput('Tiền thu', 'number', 'tienthukhac', 'Số tiền thu')}
-          {this.renderInput('Khoản chi', 'text', 'chi', 'Tên khoản chi')}
-          {this.renderInput('Tiền chi', 'number', 'tienchi', 'Số tiền chi')}
+          {this.renderInputs(
+            ['Điện', 'Nước', 'Nhà'],
+            ['number', 'number', 'number'],
+            ['dien', 'nuoc', 'nha'],
+            ['Số điện', 'Số nước', `Tiền nhà`],
+          )}
+          {this.renderInputThuChiKhac()}
         </div>
-        <button name="update" onClick={this.btnClick}>
-          CẬP NHẬT
-        </button>
-        <button
-          name={
-            this.state.datas[this.state.roomIndex].bills[0].out ? 'bill-out-cancel' : 'bill-out'
-          }
-          onClick={this.btnClick}
-        >
-          {this.state.datas[this.state.roomIndex].bills[0].out ? 'HUỶ TRẢ PHÒNG' : 'TRẢ PHÒNG'}
-        </button>
-        <button onClick={() => this.setState({ update: false })}>QUAY LẠI</button>
+        {this.renderButtons(['update-confirm', billOutBtnInfo.name, 'update-cancel'], '', ['CẬP NHẬT', billOutBtnInfo.text, 'QUAY LẠI'])}
         {this.renderLoading()}
       </div>
     )
   }
 
+  renderRegistrationInputGroup = () => {
+    if (this.state.onlyDeposit)
+      return (
+        <div class="flex col">
+          {this.renderInputs(
+            ['Tên', 'ĐTDĐ', 'Email', 'Cọc'],
+            ['text', 'number', 'email', 'number'],
+            ['name', 'phone', 'email', 'deposit'],
+            [],
+          )}
+        </div>
+      )
+    else
+      return (
+        <div class="flex col">
+          {this.renderInputs(
+            ['Tên', 'ĐTDĐ', 'Email', 'Điện', 'Nước', 'Cọc'],
+            ['text', 'number', 'email', 'number', 'number', 'number'],
+            ['name', 'phone', 'email', 'dien', 'nuoc', 'deposit'],
+            ['', '', '', 'Số điện', 'Số nước'],
+          )}
+          {this.renderInputThuChiKhac()}
+        </div>
+      )
+  }
+
   renderRegistration = () => {
+    const mainBtnText = this.state.onlyDeposit ? 'NHẬN CỌC' : 'NHẬN PHÒNG'
+    const mainBtnName = this.state.onlyDeposit ? 'deposited' : 'in'
     return (
       <div class="app">
-        <h2> Điền thông tin </h2>
-        <div class="flex col">
-          {this.renderInput('Tên', 'text', 'name')}
-          {this.renderInput('ĐTDĐ', 'number', 'phone')}
-          {this.renderInput('Email', 'email', 'email')}
-          {this.renderInput('Điện', 'number', 'dien', 'Số điện')}
-          {this.renderInput('Nước', 'number', 'nuoc', 'Số nước')}
-          {this.renderInput('Cọc', 'number', 'deposit')}
-          {this.renderInput('Thu khác', 'text', 'thukhac', 'Tên khoản thu')}
-          {this.renderInput('Tiền thu', 'number', 'tienthukhac', 'Số tiền thu')}
-          {this.renderInput('Khoản chi', 'text', 'chi', 'Tên khoản chi')}
-          {this.renderInput('Tiền chi', 'number', 'tienchi', 'Số tiền chi')}
-        </div>
-        <button name="in" onClick={this.btnClick} disabled={!this.validateRegistration()}>
-          THÊM NGƯỜI MỚI
-        </button>
-        <button onClick={() => this.setState({ reg: false })}>QUAY LẠI</button>
+        <h2 class="mar-bot-8px"> Điền thông tin </h2>
+        {this.renderRegistrationInputGroup()}
+        {this.renderButtons([mainBtnName, 'reg-cancel'], '', [mainBtnText, 'QUAY LẠI'])}
         {this.renderLoading()}
       </div>
     )
   }
 
   renderLogin = () => {
+    const isDisabled = !this.state.pass || this.state.loading
     return (
       <div class="app">
         <h1> Hello! </h1>
@@ -701,13 +731,7 @@ export default class App extends Component {
           {this.renderSelect('Năm', 'year', 'onYearSelect')}
           {this.renderSelect('Tháng', 'month', 'onMonthSelect')}
         </div>
-        <button
-          name="login"
-          onClick={this.btnClick}
-          disabled={!this.state.pass || this.state.loading}
-        >
-          ĐĂNG NHẬP
-        </button>
+        {this.renderButton('login', '', 'ĐĂNG NHẬP', '', isDisabled)}
         {this.renderLoading()}
       </div>
     )
@@ -791,32 +815,24 @@ export default class App extends Component {
         })}
         <tr class="bold header">
           <th colspan="2" onClick={() => window.print()}>
-            <h4 class="no-print right">
-              {this.calculateGrandTotal(datas).tiennha.toLocaleString('vi')}
-            </h4>
+            <h4 class="no-print right">{this.calculateGrandTotal(datas).tiennha.toLocaleString('vi')}</h4>
           </th>
           <th colspan="2" onClick={() => window.print()} />
           <th colspan="1" onClick={() => window.print()}>
             <h4>{this.calculateGrandTotal(datas).dientieuthu.toLocaleString('vi')}</h4>
           </th>
           <th colspan="2" onClick={() => window.print()}>
-            <h4 class="no-print right">
-              {this.calculateGrandTotal(datas).tiendien.toLocaleString('vi')}
-            </h4>
+            <h4 class="no-print right">{this.calculateGrandTotal(datas).tiendien.toLocaleString('vi')}</h4>
           </th>
           <th colspan="2" onClick={() => window.print()} />
           <th colspan="1" onClick={() => window.print()}>
             <h4>{this.calculateGrandTotal(datas).nuoctieuthu.toLocaleString('vi')}</h4>
           </th>
           <th colspan="2" onClick={() => window.print()}>
-            <h4 class="no-print right">
-              {this.calculateGrandTotal(datas).tiennuoc.toLocaleString('vi')}
-            </h4>
+            <h4 class="no-print right">{this.calculateGrandTotal(datas).tiennuoc.toLocaleString('vi')}</h4>
           </th>
           <th colspan="2" onClick={() => window.print()}>
-            <h4 class="no-print right">
-              {this.calculateGrandTotal(datas).phaithu.toLocaleString('vi')}
-            </h4>
+            <h4 class="no-print right">{this.calculateGrandTotal(datas).phaithu.toLocaleString('vi')}</h4>
           </th>
           <th onClick={() => this.setState({ report: false })}>
             <h4 class="no-print">{'<<<'}</h4>

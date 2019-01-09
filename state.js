@@ -22,12 +22,13 @@ const state = {
   dien: '',
   nuoc: '',
   nha: '',
+  onlyDeposit: false,
   deposit: '',
   thukhac: '',
   tienthukhac: '',
   chi: '',
   tienchi: '',
-  ver: '20190105.2312',
+  ver: '20190109.1836',
 }
 
 export default state
