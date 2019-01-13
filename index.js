@@ -150,8 +150,11 @@ export default class App extends Component {
       case 'close-thuchi-btn':
         this.setState({ openThuchi: false })
         break
-      case 'thuchi-add-btn':
-        this.addThuChiEvent()
+      case 'thu-add-btn':
+        this.addThuChiEvent(false)
+        break
+      case 'chi-add-btn':
+        this.addThuChiEvent(true)
         break
       case 'thuchi-save-btn':
         this.thuchiSaveToServer()
@@ -175,13 +178,13 @@ export default class App extends Component {
     }
   }
 
-  addThuChiEvent = () => {
+  addThuChiEvent = isChi => {
     const _thuchiClone = this.state.thuchiClone.slice(0)
     const _thuchiState = this.state.thuchiState.slice(0)
     _thuchiClone.push({ at: 0, khoan: '', tien: '' })
     const idx = _thuchiClone.length - 1
     _thuchiState[idx] = 'edit'
-    this.setState({ thuchiClone: _thuchiClone, thuchiState: _thuchiState })
+    this.setState({ thuchiClone: _thuchiClone, thuchiState: _thuchiState, isChi: isChi })
   }
 
   confirmAction = (action, info) => {
@@ -571,10 +574,11 @@ export default class App extends Component {
 
   editThuChi = (idx, isNumber, isAdd) => e => {
     const len = this.state.thuchiClone.length
+    const isChi = this.state.isChi
     idx = isAdd ? len - 1 : idx
     const clone = this.state.thuchiClone.slice(0)
     clone[idx].at = Date.now()
-    if (isNumber) clone[idx].tien = Number(e.target.value)
+    if (isNumber) clone[idx].tien = isChi ? 0 - Number(e.target.value) : Number(e.target.value)
     else clone[idx].khoan = e.target.value
     this.setState({ thuchiClone: clone })
   }
@@ -678,8 +682,9 @@ export default class App extends Component {
           })}
         </div>
         {this.totalAmountThuchi()}
-        {this.renderButtons(['thuchi-add', 'thuchi-save', 'close-thuchi'], '', [
-          'THÊM THU HOẶC CHI (SỐ ÂM)',
+        {this.renderButtons(['thuchi-add', 'thuchi-add', 'thuchi-save', 'close-thuchi'], '', [
+          'THÊM CHI',
+          'THÊM THU',
           'LƯU LÊN MÁY CHỦ',
           `QUAY LẠI`,
         ])}
