@@ -108,8 +108,9 @@ input:focus::placeholder {
 
 .thuchi > .row.edit {
   flex-wrap: wrap;
-  background-color: aquamarine;
+  border: 2px green solid;
   padding: 4px 2px;
+  box-sizing: border-box;
 }
 
 .thuchi > .row > div {
@@ -189,14 +190,20 @@ button {
   cursor: pointer;
   -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
 }
-button.small {
-  border: none;
-  padding: 0.1rem;
-  margin: 0;
-  font-size: 1rem;
-  font-weight: normal;
+button.white,
+button.small.white {
   color: rgb(0, 0, 128);
   background-color: white;
+}
+button.small {
+  border: none;
+  padding: 0.2rem;
+  margin: 0 4px;
+  font-size: 1rem;
+  font-weight: normal;
+}
+button.small:first-of-type {
+  margin-left: 8px;
 }
 button:disabled {
   background-color: rgb(230, 230, 242);
@@ -209,11 +216,6 @@ button:active {
   background-color: rgb(0, 0, 100);
   box-shadow: 0.1rem 0.1rem 0.1rem rgb(204, 204, 230);
   outline: none;
-}
-button.small:active {
-  color: rgb(158, 158, 255);
-  background-color: white;
-  box-shadow: none;
 }
 button.invalid {
   background-color: white;
@@ -358,6 +360,7 @@ button.large {
   border: 1px solid rgb(153, 153, 204);
   color: rgb(0, 0, 128);
   text-align: right;
+  margin-top: 8px;
 }
 
 .total {
@@ -461,6 +464,74 @@ button.large {
 .spinner .bounce2 {
   -webkit-animation-delay: -0.16s;
   animation-delay: -0.16s;
+}
+
+.onoffswitch {
+  position: relative;
+  flex: 0 0 25%;
+  height: 100%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+.onoffswitch-checkbox {
+  display: none;
+}
+.onoffswitch-label {
+  display: block;
+  overflow: hidden;
+  cursor: pointer;
+  border: none;
+}
+.onoffswitch-inner {
+  display: block;
+  width: 200%;
+  margin-left: -100%;
+  transition: margin 0.3s ease-in 0s;
+}
+.onoffswitch-inner:before,
+.onoffswitch-inner:after {
+  display: block;
+  float: left;
+  width: 50%;
+  height: 1.6rem;
+  padding: 0;
+  line-height: 1.7rem;
+  font-size: 1rem;
+  color: white;
+  font-weight: bold;
+  box-sizing: border-box;
+}
+.onoffswitch-inner:before {
+  content: 'CHI';
+  padding-left: 8px;
+  background-color: #000080;
+  color: #ffffff;
+}
+.onoffswitch-inner:after {
+  content: 'THU';
+  padding-right: 8px;
+  background-color: #007a49;
+  color: #ffffff;
+  text-align: right;
+}
+.onoffswitch-switch {
+  display: block;
+  width: 1.5rem;
+  margin: 6px;
+  background: #ffffff;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 46px;
+  border: 2px solid #ffffff;
+  transition: all 0.3s ease-in 0s;
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-inner {
+  margin-left: 0;
+}
+.onoffswitch-checkbox:checked + .onoffswitch-label .onoffswitch-switch {
+  right: 0px;
 }
 
 @-webkit-keyframes sk-bouncedelay {

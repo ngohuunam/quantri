@@ -4,6 +4,7 @@ const state = {
   notice: '',
   datas: [],
   roomIndex: 0,
+  billIndex: 0,
   confirm: '',
   showAll: true,
   sthChanged: true,
@@ -28,12 +29,11 @@ const state = {
   tienthukhac: '',
   chi: '',
   tienchi: '',
-  openThuchi: true,
+  openThuchi: false,
   thuchi: [],
   thuchiState: [],
   thuchiClone: [],
-  isChi: true,
-  ver: '20190113.1706',
+  ver: '20190113.2321',
 }
 
 export default state

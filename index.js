@@ -111,12 +111,11 @@ export default class App extends Component {
         if (this.state.roomIndex) this.setState({ roomIndex: this.state.roomIndex - 1 })
         else this.setState({ roomIndex: this.state.datas.length - 1 })
         break
-      case 'out-btn':
-      case 'purchase-btn':
-        this.setState({ confirm: eventName.slice(0, -4) })
-        break
-      case 'ok-btn':
+      case 'purchase-confirm-btn':
         this.confirmAction(this.state.confirm)
+        break
+      case 'purchase-cancel-btn':
+        this.setState({ confirm: '', billIndex: 0 })
         break
       case 'reg-cancel-btn':
         this.setState({ onlyDeposit: false, reg: false })
@@ -142,7 +141,10 @@ export default class App extends Component {
         this.confirmAction('update')
         break
       case 'update-cancel-btn':
-        this.setState({ update: false })
+        this.setState({ update: false, billIndex: 0 })
+        break
+      case 'paid-cancel-btn':
+        this.confirmAction('paid-cancel')
         break
       case 'open-thuchi-btn':
         this.setState({ openThuchi: true })
@@ -150,11 +152,8 @@ export default class App extends Component {
       case 'close-thuchi-btn':
         this.setState({ openThuchi: false })
         break
-      case 'thu-add-btn':
-        this.addThuChiEvent(false)
-        break
-      case 'chi-add-btn':
-        this.addThuChiEvent(true)
+      case 'thuchi-add-btn':
+        this.addThuChiEvent()
         break
       case 'thuchi-save-btn':
         this.thuchiSaveToServer()
@@ -178,13 +177,13 @@ export default class App extends Component {
     }
   }
 
-  addThuChiEvent = isChi => {
+  addThuChiEvent = () => {
     const _thuchiClone = this.state.thuchiClone.slice(0)
     const _thuchiState = this.state.thuchiState.slice(0)
     _thuchiClone.push({ at: 0, khoan: '', tien: '' })
     const idx = _thuchiClone.length - 1
     _thuchiState[idx] = 'edit'
-    this.setState({ thuchiClone: _thuchiClone, thuchiState: _thuchiState, isChi: isChi })
+    this.setState({ thuchiClone: _thuchiClone, thuchiState: _thuchiState })
   }
 
   confirmAction = (action, info) => {
@@ -213,6 +212,7 @@ export default class App extends Component {
           tien: typeof this.state.tienchi === 'number' ? 0 - this.state.tienchi : 0,
         },
         thuchi: this.state.thuchiClone,
+        billStatus: this.state.billIndex ? 'inactive' : 'active',
         preout: info,
       })
       console.log(body)
@@ -237,7 +237,7 @@ export default class App extends Component {
                   this.setNotice('Lưu thành công', 2)
                 } else {
                   const dataClone = this.state.datas.slice(0)
-                  dataClone[this.state.roomIndex].bills[0] = json
+                  dataClone[this.state.roomIndex].bills[this.state.billIndex] = json
                   this.setState({
                     datas: dataClone,
                     notice: '',
@@ -247,6 +247,7 @@ export default class App extends Component {
                     onlyDeposit: false,
                     dien: json.dien,
                     nuoc: json.nuoc,
+                    billIndex: 0,
                   })
                 }
               })
@@ -294,14 +295,15 @@ export default class App extends Component {
                 localStorage.setItem('adminToken', json.token)
                 const LEN = process.env.NODE_ENV === 'production' ? 18 : 19
                 // const LEN = 18
-                const temp = JSON.parse(JSON.stringify(json.datas[19].bills[0].datas))
+                const thuchi = json.datas[19].bills.length ? json.datas[19].bills[0].datas : []
+                const thuchiClone = thuchi.length ? JSON.parse(JSON.stringify(thuchi)) : []
                 this.setState({
                   datas: json.datas.slice(0, LEN),
                   token: json.token,
                   notice: '',
                   sthChanged: false,
-                  thuchi: json.datas[19].bills[0].datas,
-                  thuchiClone: temp,
+                  thuchi: thuchi,
+                  thuchiClone: thuchiClone,
                 })
               })
               .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
@@ -316,7 +318,7 @@ export default class App extends Component {
           } else this.setState({ notice: 'Không có dữ liệu' })
         })
         .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
-    }
+    } else this.setState({ dialog: false })
   }
 
   renderSelect = (label, name, fx) => {
@@ -346,9 +348,7 @@ export default class App extends Component {
     if (fee && fee.tien)
       return (
         <div class="total">
-          <div>
-            {fee.tien < 0 ? 'CHI' : 'THU'} {fee.khoan.toUpperCase()}
-          </div>
+          <div>{fee.khoan.toUpperCase()}</div>
           <div>{fee.tien.toLocaleString('vi')} đ</div>
         </div>
       )
@@ -422,15 +422,13 @@ export default class App extends Component {
   }
 
   renderConfirm = d => {
-    const thuchiString = d.bills[0].tongcong > 0 ? 'thu' : 'chi'
-    const mess = `"OK" xác nhận đã ${thuchiString} tiền phòng ${d.room} tháng ${d.month}/${
-      d.year
-    } số tiền ${d.bills[0].tongcong.toLocaleString('vi')} đ`
+    const tongcong = d.bills[this.state.billIndex].tongcong
+    const thuchiString = tongcong > 0 ? 'thu' : 'chi'
+    const mess = `Xác nhận ${thuchiString} tiền phòng ${d.room} tháng ${d.month}/${d.year} số tiền ${tongcong.toLocaleString('vi')}`
     return (
       <div class="app">
         <h2>{mess}</h2>
-        {this.renderButtons(['ok', 'cancel'], 'large', ['OK', 'HỦY'])}
-        {this.renderLoading()}
+        {this.renderButtons(['purchase-confirm', 'purchase-cancel'], 'large', ['OK', 'HỦY'])}
       </div>
     )
   }
@@ -449,20 +447,20 @@ export default class App extends Component {
     return names.map((name, idx) => {
       const action = actions && actions.length ? actions[idx] : actions
       const isDisabled = isDisableds && isDisableds.length ? isDisableds[idx] : false
-      const btnClass = classNames && typeof classNames === 'array' && classNames.length ? classNames[idx] : classNames
+      const btnClass = classNames && Array.isArray(classNames) && classNames.length ? classNames[idx] : classNames
       const text = texts[idx]
       return this.renderButton(name, btnClass, text, action, isDisabled)
     })
   }
 
-  renderRoomButton = (bill, prev, next) => {
+  renderRoomButton = (bill, idx, prev, next) => {
     const btnName = bill.out ? 'out' : 'purchase'
     const mainBtnStatus = this.buttonStatus(bill)
     const btnClass = mainBtnStatus.className
     const isDisabled = mainBtnStatus.disabled
     const btnText = mainBtnStatus.label
-    const regBtnClass = !bill || bill.onlyDeposit || (bill && bill.out && bill.thanhtoan) ? '' : 'hidden'
-    const depositBtnClass = !bill || (bill && bill.out && bill.thanhtoan && !bill.deposit) ? '' : 'hidden'
+    const regBtnClass = !idx && (!bill || bill.onlyDeposit || (bill && bill.out && bill.thanhtoan)) ? '' : 'hidden'
+    const depositBtnClass = !idx && (!bill || (bill && bill.out && bill.thanhtoan && !bill.deposit)) ? '' : 'hidden'
     const updateBtnClass = bill ? '' : 'hidden'
     const updateBtnAction = () =>
       this.setState({
@@ -470,30 +468,33 @@ export default class App extends Component {
         dien: bill.dien.sokynay || bill.dien.sokytruoc,
         nuoc: bill.nuoc.sokynay || bill.nuoc.sokytruoc,
         nha: '',
+        billIndex: idx,
       })
+    const purchaseBtnAction = () => this.setState({ confirm: btnName, billIndex: idx })
     return (
       <div>
         {this.renderBill(bill)}
         <div class="btnGroup">
-          {this.renderButtons(['prev', btnName, 'next'], ['', btnClass, ''], [prev.room, btnText, next.room], '', [
-            false,
-            isDisabled,
-            false,
-          ])}
+          {this.renderButtons(
+            ['prev', btnName, 'next'],
+            ['', btnClass, ''],
+            [prev.room, btnText, next.room],
+            ['', purchaseBtnAction, ''],
+            [false, isDisabled, false],
+          )}
         </div>
         {this.renderButtons(
           ['show-all', 'reg', 'deposit', 'update'],
           ['', regBtnClass, depositBtnClass, updateBtnClass],
           ['DANH SÁCH PHÒNG', 'NHẬN PHÒNG', 'ĐẶT CỌC', 'CẬP NHẬT'],
           ['', '', '', updateBtnAction],
-          [false, false, false, bill.thanhtoan],
         )}
       </div>
     )
   }
 
   renderBills = (bills, prev, next) => {
-    if (bills.length) return <div>{bills.map(bill => this.renderRoomButton(bill, prev, next))}</div>
+    if (bills.length) return <div>{bills.map((bill, idx) => this.renderRoomButton(bill, idx, prev, next))}</div>
     else return <div>{this.renderRoomButton(false, prev, next)}</div>
   }
 
@@ -574,11 +575,10 @@ export default class App extends Component {
 
   editThuChi = (idx, isNumber, isAdd) => e => {
     const len = this.state.thuchiClone.length
-    const isChi = this.state.isChi
     idx = isAdd ? len - 1 : idx
     const clone = this.state.thuchiClone.slice(0)
     clone[idx].at = Date.now()
-    if (isNumber) clone[idx].tien = isChi ? 0 - Number(e.target.value) : Number(e.target.value)
+    if (isNumber) clone[idx].tien = Number(e.target.value)
     else clone[idx].khoan = e.target.value
     this.setState({ thuchiClone: clone })
   }
@@ -590,33 +590,34 @@ export default class App extends Component {
     if (!this.state.thuchiClone[idx].khoan && !this.state.thuchiClone[idx].tien) {
       _thuchiClone.splice(idx, 1)
       _thuchiState.splice(idx, 1)
-    } else {
-      if (this.state.thuchi[idx]) {
-        const isChanged = _thuchiClone[idx].khoan !== this.state.thuchi[idx].khoan || _thuchiClone[idx].tien !== this.state.thuchi[idx].tien
-        _thuchiState[idx] = isOk ? 'ok' : null
-        if (isChanged && !isOk) {
-          const _thuchi = JSON.parse(JSON.stringify(this.state.thuchi))
-          _thuchiClone[idx] = _thuchi[idx]
-        }
-      } else _thuchiClone.splice(idx, 1)
-    }
+    } else if (isOk) _thuchiState[idx] = 'ok'
+    else if (this.state.thuchi[idx]) {
+      const isChanged = _thuchiClone[idx].khoan !== this.state.thuchi[idx].khoan || _thuchiClone[idx].tien !== this.state.thuchi[idx].tien
+      _thuchiState[idx] = null
+      if (isChanged) {
+        const _thuchi = JSON.parse(JSON.stringify(this.state.thuchi))
+        _thuchiClone[idx] = _thuchi[idx]
+      }
+    } else _thuchiClone.splice(idx, 1)
     this.setState({ thuchiClone: _thuchiClone, thuchiState: _thuchiState })
   }
 
   renderEditThuChi = idx => {
     const khoan = this.state.thuchiClone[idx].khoan
     const tien = this.state.thuchiClone[idx].tien
-    return this.renderEditThuChiElement(idx, khoan, tien, this.editingThuChiFunc)
-  }
 
-  delThuchi = idx => e => {
-    e.preventDefault()
-    const newThuchiClone = this.state.thuchiClone.filter((tc, i) => i !== idx)
-    const newThuchiState = this.state.thuchiState.filter((tc, i) => i !== idx)
-    this.setState({ thuchiClone: newThuchiClone, thuchiState: newThuchiState })
-  }
+    const thuchiSwitch = () => {
+      const _thuchiClone = this.state.thuchiClone.slice(0)
+      _thuchiClone[idx].tien = 0 - tien
+      this.setState({ thuchiClone: _thuchiClone })
+    }
 
-  renderEditThuChiElement = (idx, khoan, tien, editingFunc) => {
+    const delThuchi = () => {
+      const newThuchiClone = this.state.thuchiClone.filter((tc, i) => i !== idx)
+      const newThuchiState = this.state.thuchiState.filter((tc, i) => i !== idx)
+      this.setState({ thuchiClone: newThuchiClone, thuchiState: newThuchiState })
+    }
+
     return (
       <div class="row edit">
         <div>
@@ -626,11 +627,25 @@ export default class App extends Component {
           <input class="small text-align-right" type="number" value={tien} onChange={this.editThuChi(idx, true)} placeholder="Tiền" />
         </div>
         <div>
+          <div class="onoffswitch">
+            <input
+              onChange={thuchiSwitch}
+              type="checkbox"
+              name="onoffswitch"
+              class="onoffswitch-checkbox"
+              id="myonoffswitch"
+              checked={tien < 0}
+            />
+            <label class="onoffswitch-label" for="myonoffswitch">
+              <span class="onoffswitch-inner" />
+              <span class="onoffswitch-switch" />
+            </label>
+          </div>
           {this.renderButtons(
             ['thuchi-edit-del', 'thuchi-edit-cancel', 'thuchi-edit-ok'],
             'small',
             ['Xóa', 'Cancel', 'OK'],
-            [this.delThuchi(idx), editingFunc(idx, false), editingFunc(idx, true)],
+            [delThuchi, this.editingThuChiFunc(idx, false), this.editingThuChiFunc(idx, true)],
           )}
         </div>
       </div>
@@ -681,13 +696,7 @@ export default class App extends Component {
           })}
         </div>
         {this.totalAmountThuchi()}
-        {this.renderButtons(['chi-add', 'thu-add', 'thuchi-save', 'close-thuchi'], '', [
-          'THÊM CHI',
-          'THÊM THU',
-          'LƯU LÊN MÁY CHỦ',
-          `QUAY LẠI`,
-        ])}
-        {this.renderLoading()}
+        {this.renderButtons(['thuchi-add', 'thuchi-save', 'close-thuchi'], '', ['THÊM THU CHI', 'LƯU LÊN MÁY CHỦ', `QUAY LẠI`])}
       </div>
     )
   }
@@ -757,14 +766,13 @@ export default class App extends Component {
           {this.renderSelect('Tháng', 'month', 'onMonthSelect')}
         </div>
         {this.renderButtons(['dialog-ok', 'close-dialog'], 'large', ['OK', 'HỦY'])}
-        {this.renderLoading()}
       </div>
     )
   }
 
   renderLoading = () => {
     return (
-      <div class="app">
+      <div>
         <div className={this.state.notice ? 'notice' : 'hidden'}>{this.state.notice}</div>
         <div className={this.state.loading ? 'spinner' : 'hidden'} style="width: 100%;">
           <div class="bounce1" />
@@ -834,10 +842,11 @@ export default class App extends Component {
     )
   }
 
-  renderBillUpdate = () => {
-    const billOutBtnInfo = this.state.datas[this.state.roomIndex].bills[0].out
+  renderBillUpdate = (roomIdx, billIdx) => {
+    const billOutBtnInfo = this.state.datas[roomIdx].bills[billIdx].out
       ? { name: 'bill-out-cancel', text: 'HUỶ TRẢ PHÒNG' }
       : { name: 'bill-out', text: 'TRẢ PHÒNG' }
+    const paidCancelBtnClass = this.state.datas[roomIdx].bills[billIdx].thanhtoan ? '' : 'hidden'
     return (
       <div class="app">
         <h1> Cập Nhật </h1>
@@ -850,8 +859,11 @@ export default class App extends Component {
           )}
           {this.renderInputThuChiKhac()}
         </div>
-        {this.renderButtons(['update-confirm', billOutBtnInfo.name, 'update-cancel'], '', ['CẬP NHẬT', billOutBtnInfo.text, 'QUAY LẠI'])}
-        {this.renderLoading()}
+        {this.renderButtons(
+          ['update-confirm', 'paid-cancel', billOutBtnInfo.name, 'update-cancel'],
+          ['', paidCancelBtnClass, '', ''],
+          ['CẬP NHẬT', 'HỦY THANH TOÁN', billOutBtnInfo.text, 'QUAY LẠI'],
+        )}
       </div>
     )
   }
@@ -890,7 +902,6 @@ export default class App extends Component {
         <h2 class="mar-bot-8px"> Điền thông tin </h2>
         {this.renderRegistrationInputGroup()}
         {this.renderButtons([mainBtnName, 'reg-cancel'], '', [mainBtnText, 'QUAY LẠI'])}
-        {this.renderLoading()}
       </div>
     )
   }
@@ -906,7 +917,6 @@ export default class App extends Component {
           {this.renderSelect('Tháng', 'month', 'onMonthSelect')}
         </div>
         {this.renderButton('login', '', 'ĐĂNG NHẬP', '', isDisabled)}
-        {this.renderLoading()}
       </div>
     )
   }
@@ -1016,7 +1026,7 @@ export default class App extends Component {
     )
   }
 
-  renderPage = (token, showAll, dialog, datas, report, reg, update, openThuchi) => {
+  renderPage = (token, showAll, dialog, datas, report, reg, update, roomIndex, billIndex, openThuchi) => {
     if (typeof window !== 'undefined') window.scroll(0, 0)
     if (token) {
       if (dialog) return this.renderSelectMonthYear()
@@ -1026,17 +1036,18 @@ export default class App extends Component {
         if (datas.length) {
           if (showAll) return this.renderListRooms(datas)
           else if (reg) return this.renderRegistration()
-          else if (update) return this.renderBillUpdate()
+          else if (update) return this.renderBillUpdate(roomIndex, billIndex)
           else return this.renderRoom(datas)
-        } else return this.renderLoading()
+        }
       }
     } else return this.renderLogin()
   }
 
-  render({}, { token, showAll, dialog, datas, report, reg, ver, update, openThuchi }) {
+  render({}, { token, showAll, dialog, datas, report, reg, ver, update, roomIndex, billIndex, openThuchi }) {
     return (
       <div>
-        {this.renderPage(token, showAll, dialog, datas, report, reg, update, openThuchi)}
+        {this.renderLoading()}
+        {this.renderPage(token, showAll, dialog, datas, report, reg, update, roomIndex, billIndex, openThuchi)}
         <div class="version">{ver}</div>
       </div>
     )
