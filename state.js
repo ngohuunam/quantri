@@ -33,7 +33,7 @@ const state = {
   thuchiState: [],
   thuchiClone: [],
   isChi: true,
-  ver: '20190113.1656',
+  ver: '20190113.1706',
 }
 
 export default state

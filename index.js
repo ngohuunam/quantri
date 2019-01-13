@@ -591,15 +591,14 @@ export default class App extends Component {
       _thuchiClone.splice(idx, 1)
       _thuchiState.splice(idx, 1)
     } else {
-      const isChanged = _thuchiClone[idx].khoan !== this.state.thuchi[idx].khoan || _thuchiClone[idx].tien !== this.state.thuchi[idx].tien
-      _thuchiState[idx] = null
-      if (isChanged) {
-        if (isOk) _thuchiState[idx] = 'ok'
-        else {
+      if (this.state.thuchi[idx]) {
+        const isChanged = _thuchiClone[idx].khoan !== this.state.thuchi[idx].khoan || _thuchiClone[idx].tien !== this.state.thuchi[idx].tien
+        _thuchiState[idx] = isOk ? 'ok' : null
+        if (isChanged && !isOk) {
           const _thuchi = JSON.parse(JSON.stringify(this.state.thuchi))
           _thuchiClone[idx] = _thuchi[idx]
         }
-      }
+      } else _thuchiClone.splice(idx, 1)
     }
     this.setState({ thuchiClone: _thuchiClone, thuchiState: _thuchiState })
   }
@@ -621,10 +620,10 @@ export default class App extends Component {
     return (
       <div class="row edit">
         <div>
-          <input class="small" type="text" value={khoan} onInput={this.editThuChi(idx)} placeholder="Khoản" autoFocus />
+          <input class="small" type="text" value={khoan} onChange={this.editThuChi(idx)} placeholder="Khoản" autoFocus />
         </div>
         <div>
-          <input class="small text-align-right" type="number" value={tien} onInput={this.editThuChi(idx, true)} placeholder="Tiền" />
+          <input class="small text-align-right" type="number" value={tien} onChange={this.editThuChi(idx, true)} placeholder="Tiền" />
         </div>
         <div>
           {this.renderButtons(
@@ -682,7 +681,7 @@ export default class App extends Component {
           })}
         </div>
         {this.totalAmountThuchi()}
-        {this.renderButtons(['thuchi-add', 'thuchi-add', 'thuchi-save', 'close-thuchi'], '', [
+        {this.renderButtons(['chi-add', 'thu-add', 'thuchi-save', 'close-thuchi'], '', [
           'THÊM CHI',
           'THÊM THU',
           'LƯU LÊN MÁY CHỦ',
