@@ -57,6 +57,9 @@ input {
   font-size: 1.3rem;
   transition: all 0.1s ease-in-out;
 }
+input.small {
+  font-size: 1rem;
+}
 input {
   color: rgb(204, 204, 230);
 }
@@ -92,6 +95,67 @@ input:focus::placeholder {
   border-left: 1px solid white;
 }
 
+.thuchi {
+  display: flex;
+  flex-direction: column;
+}
+
+.thuchi > .row {
+  display: flex;
+  border-bottom: 1px solid;
+  flex: 1;
+}
+
+.thuchi > .row.edit {
+  flex-wrap: wrap;
+  background-color: aquamarine;
+  padding: 4px 2px;
+}
+
+.thuchi > .row > div {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 4px 2px;
+}
+
+.thuchi > .row > div > input::-webkit-inner-spin-button,
+.thuchi > .row > div > input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.thuchi > .row:first-child {
+  border-top: 1px solid;
+}
+
+.thuchi > .row.edit > div:first-child {
+  flex: 0 0 65%;
+}
+
+.thuchi > .row > div:first-child {
+  flex: 0 0 53%;
+  justify-content: flex-start;
+  padding-left: 0;
+}
+
+.thuchi > .row.edit > div:nth-child(2) {
+  flex: 1;
+}
+
+.thuchi > .row > div:nth-child(2) {
+  flex: 0 0 25%;
+}
+
+.thuchi > .row > div:last-child {
+  padding-right: 0;
+}
+
+.no-border {
+  border: none !important;
+}
+
 .list {
   display: flex;
   flex-wrap: wrap;
@@ -102,12 +166,20 @@ input:focus::placeholder {
   flex: 0 0 45%;
 }
 
+.no-margin {
+  margin: 0 !important;
+}
+
+.text-align-right {
+  text-align: right;
+}
+
 button {
   box-sizing: border-box;
   width: 100%;
   border: none;
   padding: 0.9rem;
-  margin: 0 0 0.4rem 0;
+  margin: 0.4rem 0 0 0;
   font-size: 1.1rem;
   font-weight: bold;
   color: white;
@@ -115,6 +187,16 @@ button {
   outline: none;
   transition: all 0.05s ease-in-out;
   cursor: pointer;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+button.small {
+  border: none;
+  padding: 0.1rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: normal;
+  color: rgb(0, 0, 128);
+  background-color: white;
 }
 button:disabled {
   background-color: rgb(230, 230, 242);
@@ -127,6 +209,11 @@ button:active {
   background-color: rgb(0, 0, 100);
   box-shadow: 0.1rem 0.1rem 0.1rem rgb(204, 204, 230);
   outline: none;
+}
+button.small:active {
+  color: rgb(158, 158, 255);
+  background-color: white;
+  box-shadow: none;
 }
 button.invalid {
   background-color: white;
@@ -261,6 +348,10 @@ button.large {
 .general-income > div:first-child {
   border-top: 1px solid rgb(0, 0, 128);
   padding-top: 8px;
+}
+
+.general-income > div:last-child {
+  margin-bottom: 8px;
 }
 
 .bill {

@@ -68,10 +68,8 @@ export default class App extends Component {
       case 'nha':
       case 'deposit':
       case 'tienthukhac':
-        this.setState({ [name]: Number(value) })
-        break
-
       case 'tienchi':
+      case 'addThuChiTien':
         this.setState({ [name]: Number(value) })
         break
 
@@ -146,7 +144,44 @@ export default class App extends Component {
       case 'update-cancel-btn':
         this.setState({ update: false })
         break
+      case 'open-thuchi-btn':
+        this.setState({ openThuchi: true })
+        break
+      case 'close-thuchi-btn':
+        this.setState({ openThuchi: false })
+        break
+      case 'thuchi-add-btn':
+        this.addThuChiEvent()
+        break
+      case 'thuchi-save-btn':
+        this.thuchiSaveToServer()
+        break
     }
+  }
+
+  setNotice = (text, time) => {
+    this.setState({ notice: text })
+    setTimeout(() => this.setState({ notice: '' }), time * 1000)
+  }
+
+  thuchiSaveToServer = () => {
+    const isEditingThuchi = this.state.thuchiState.some(st => st === 'edit')
+    if (isEditingThuchi) this.setNotice('Đang thay đổi, hoàn thanh thay đổi trước khi lưu lên server', 2)
+    else {
+      const thuchiStr = JSON.stringify(this.state.thuchi)
+      const thuchiCloneStr = JSON.stringify(this.state.thuchiClone)
+      if (thuchiStr !== thuchiCloneStr) this.confirmAction('thuchi')
+      else this.setNotice('Không có gì thay đổi', 2)
+    }
+  }
+
+  addThuChiEvent = () => {
+    const _thuchiClone = this.state.thuchiClone.slice(0)
+    const _thuchiState = this.state.thuchiState.slice(0)
+    _thuchiClone.push({ at: 0, khoan: '', tien: '' })
+    const idx = _thuchiClone.length - 1
+    _thuchiState[idx] = 'edit'
+    this.setState({ thuchiClone: _thuchiClone, thuchiState: _thuchiState })
   }
 
   confirmAction = (action, info) => {
@@ -174,6 +209,7 @@ export default class App extends Component {
           khoan: this.state.chi,
           tien: typeof this.state.tienchi === 'number' ? 0 - this.state.tienchi : 0,
         },
+        thuchi: this.state.thuchiClone,
         preout: info,
       })
       console.log(body)
@@ -192,19 +228,24 @@ export default class App extends Component {
               .json()
               .then(json => {
                 console.log(json)
-                const dataClone = this.state.datas.slice(0)
-                dataClone[this.state.roomIndex].bills[0] = json
-                this.setState({
-                  datas: dataClone,
-                  notice: '',
-                  confirm: '',
-                  newActive: json.new,
-                  reg: false,
-                  update: false,
-                  onlyDeposit: false,
-                  dien: json.dien,
-                  nuoc: json.nuoc,
-                })
+                if (action === 'thuchi') {
+                  const clone = JSON.parse(JSON.stringify(json))
+                  this.setState({ thuchi: json, thuchiClone: clone, thuchiState: [] })
+                  this.setNotice('Lưu thành công', 2)
+                } else {
+                  const dataClone = this.state.datas.slice(0)
+                  dataClone[this.state.roomIndex].bills[0] = json
+                  this.setState({
+                    datas: dataClone,
+                    notice: '',
+                    confirm: '',
+                    reg: false,
+                    update: false,
+                    onlyDeposit: false,
+                    dien: json.dien,
+                    nuoc: json.nuoc,
+                  })
+                }
               })
               .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
           } else if (res.status === 406) {
@@ -250,11 +291,14 @@ export default class App extends Component {
                 localStorage.setItem('adminToken', json.token)
                 const LEN = process.env.NODE_ENV === 'production' ? 18 : 19
                 // const LEN = 18
+                const temp = JSON.parse(JSON.stringify(json.datas[19].bills[0].datas))
                 this.setState({
                   datas: json.datas.slice(0, LEN),
                   token: json.token,
                   notice: '',
                   sthChanged: false,
+                  thuchi: json.datas[19].bills[0].datas,
+                  thuchiClone: temp,
                 })
               })
               .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
@@ -295,14 +339,14 @@ export default class App extends Component {
     )
   }
 
-  renderOtherFee = (thuchi, isChi) => {
-    if (thuchi && thuchi.tien)
+  renderOtherFee = fee => {
+    if (fee && fee.tien)
       return (
         <div class="total">
           <div>
-            {isChi ? 'CHI' : 'THU'} {thuchi.khoan.toUpperCase()}
+            {fee.tien < 0 ? 'CHI' : 'THU'} {fee.khoan.toUpperCase()}
           </div>
-          <div>{thuchi.tien.toLocaleString('vi')} đ</div>
+          <div>{fee.tien.toLocaleString('vi')} đ</div>
         </div>
       )
   }
@@ -402,7 +446,7 @@ export default class App extends Component {
     return names.map((name, idx) => {
       const action = actions && actions.length ? actions[idx] : actions
       const isDisabled = isDisableds && isDisableds.length ? isDisableds[idx] : false
-      const btnClass = classNames && classNames.length ? classNames[idx] : classNames
+      const btnClass = classNames && typeof classNames === 'array' && classNames.length ? classNames[idx] : classNames
       const text = texts[idx]
       return this.renderButton(name, btnClass, text, action, isDisabled)
     })
@@ -518,6 +562,132 @@ export default class App extends Component {
     return text
   }
 
+  goToEditThuChi = idx => e => {
+    e.preventDefault()
+    let clone = this.state.thuchiState.slice(0)
+    clone[idx] = 'edit'
+    this.setState({ thuchiState: clone })
+  }
+
+  editThuChi = (idx, isNumber, isAdd) => e => {
+    const len = this.state.thuchiClone.length
+    idx = isAdd ? len - 1 : idx
+    const clone = this.state.thuchiClone.slice(0)
+    clone[idx].at = Date.now()
+    if (isNumber) clone[idx].tien = Number(e.target.value)
+    else clone[idx].khoan = e.target.value
+    this.setState({ thuchiClone: clone })
+  }
+
+  editingThuChiFunc = (idx, isOk) => e => {
+    e.preventDefault()
+    let _thuchiClone = this.state.thuchiClone.slice(0)
+    let _thuchiState = this.state.thuchiState.slice(0)
+    if (!this.state.thuchiClone[idx].khoan && !this.state.thuchiClone[idx].tien) {
+      _thuchiClone.splice(idx, 1)
+      _thuchiState.splice(idx, 1)
+    } else {
+      const isChanged = _thuchiClone[idx].khoan !== this.state.thuchi[idx].khoan || _thuchiClone[idx].tien !== this.state.thuchi[idx].tien
+      _thuchiState[idx] = null
+      if (isChanged) {
+        if (isOk) _thuchiState[idx] = 'ok'
+        else {
+          const _thuchi = JSON.parse(JSON.stringify(this.state.thuchi))
+          _thuchiClone[idx] = _thuchi[idx]
+        }
+      }
+    }
+    this.setState({ thuchiClone: _thuchiClone, thuchiState: _thuchiState })
+  }
+
+  renderEditThuChi = idx => {
+    const khoan = this.state.thuchiClone[idx].khoan
+    const tien = this.state.thuchiClone[idx].tien
+    return this.renderEditThuChiElement(idx, khoan, tien, this.editingThuChiFunc)
+  }
+
+  delThuchi = idx => e => {
+    e.preventDefault()
+    const newThuchiClone = this.state.thuchiClone.filter((tc, i) => i !== idx)
+    const newThuchiState = this.state.thuchiState.filter((tc, i) => i !== idx)
+    this.setState({ thuchiClone: newThuchiClone, thuchiState: newThuchiState })
+  }
+
+  renderEditThuChiElement = (idx, khoan, tien, editingFunc) => {
+    return (
+      <div class="row edit">
+        <div>
+          <input class="small" type="text" value={khoan} onInput={this.editThuChi(idx)} placeholder="Khoản" autoFocus />
+        </div>
+        <div>
+          <input class="small text-align-right" type="number" value={tien} onInput={this.editThuChi(idx, true)} placeholder="Tiền" />
+        </div>
+        <div>
+          {this.renderButtons(
+            ['thuchi-edit-del', 'thuchi-edit-cancel', 'thuchi-edit-ok'],
+            'small',
+            ['Xóa', 'Cancel', 'OK'],
+            [this.delThuchi(idx), editingFunc(idx, false), editingFunc(idx, true)],
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  renderThuChiRowElement = (khoan, tien, idx) => {
+    return (
+      <div class="row">
+        <div>{khoan}</div>
+        <div>{tien.toLocaleString('vi')}</div>
+        <div>{this.renderButton('goto-edit-thuchi', 'small', `Sửa`, this.goToEditThuChi(idx))}</div>
+      </div>
+    )
+  }
+
+  totalAmountThuchi = () => {
+    let total = 0
+    this.state.thuchiClone.map(tc => {
+      if (typeof tc.tien === 'number') total += tc.tien
+    })
+    return (
+      <div class="general-income">
+        <div class="no-border">
+          <h3>Tổng cộng: </h3>
+          <h3>{total.toLocaleString('vi')}</h3>
+        </div>
+      </div>
+    )
+  }
+
+  renderThuChiPage = () => {
+    return (
+      <div class="app">
+        <h3 class="mar-bot-8px">
+          Thu chi tháng {this.state.month} - {this.state.year}
+        </h3>
+        <div class="thuchi">
+          {this.state.thuchiClone.map((d, idx) => {
+            if (this.state.openThuchi || this.state.thuchiState[idx]) {
+              if (this.state.thuchiState[idx] === 'edit') return this.renderEditThuChi(idx)
+              else if (this.state.openThuchi || this.state.thuchiState[idx] === 'ok')
+                return this.renderThuChiRowElement(d.khoan, d.tien, idx)
+            }
+            const khoan = this.state.thuchi[idx].khoan
+            const tien = this.state.thuchi[idx].tien
+            return this.renderThuChiRowElement(khoan, tien, idx)
+          })}
+        </div>
+        {this.totalAmountThuchi()}
+        {this.renderButtons(['thuchi-add', 'thuchi-save', 'close-thuchi'], '', [
+          'THÊM THU HOẶC CHI (SỐ ÂM)',
+          'LƯU LÊN MÁY CHỦ',
+          `QUAY LẠI`,
+        ])}
+        {this.renderLoading()}
+      </div>
+    )
+  }
+
   renderListRoomsTable = () => {
     const labels = [
       'Phải thu',
@@ -569,7 +739,7 @@ export default class App extends Component {
           })}
         </div>
         {this.renderListRoomsTable()}
-        {this.renderButton('report', 'mar-top-8px', `TỔNG HỢP THÁNG ${this.state.month} - ${this.state.year}`)}
+        {this.renderButtons(['open-thuchi', 'report'], '', ['THU - CHI', `TỔNG HỢP THÁNG ${this.state.month} - ${this.state.year}`])}
       </div>
     )
   }
@@ -842,11 +1012,12 @@ export default class App extends Component {
     )
   }
 
-  renderPage = (token, showAll, dialog, datas, report, reg, update) => {
+  renderPage = (token, showAll, dialog, datas, report, reg, update, openThuchi) => {
     if (typeof window !== 'undefined') window.scroll(0, 0)
     if (token) {
       if (dialog) return this.renderSelectMonthYear()
       else if (report) return this.renderReport(datas)
+      else if (openThuchi) return this.renderThuChiPage()
       else {
         if (datas.length) {
           if (showAll) return this.renderListRooms(datas)
@@ -858,10 +1029,10 @@ export default class App extends Component {
     } else return this.renderLogin()
   }
 
-  render({}, { token, showAll, dialog, datas, report, reg, ver, update }) {
+  render({}, { token, showAll, dialog, datas, report, reg, ver, update, openThuchi }) {
     return (
       <div>
-        {this.renderPage(token, showAll, dialog, datas, report, reg, update)}
+        {this.renderPage(token, showAll, dialog, datas, report, reg, update, openThuchi)}
         <div class="version">{ver}</div>
       </div>
     )

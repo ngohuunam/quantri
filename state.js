@@ -28,7 +28,11 @@ const state = {
   tienthukhac: '',
   chi: '',
   tienchi: '',
-  ver: '20190109.1836',
+  openThuchi: true,
+  thuchi: [],
+  thuchiState: [],
+  thuchiClone: [],
+  ver: '20190113.1633',
 }
 
 export default state
