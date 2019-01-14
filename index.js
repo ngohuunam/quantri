@@ -205,8 +205,9 @@ export default class App extends Component {
       this.setNotice('Lưu thành công', 2)
     } else {
       const dataClone = this.state.datas.slice(0)
-      if (action === 'update') dataClone[this.state.roomIndex].bills[this.state.billIndex] = json
-      else dataClone[this.state.roomIndex].bills.unshift(json)
+      const billsClone = dataClone[this.state.roomIndex].bills
+      if (action === 'in' || action === 'deposited') billsClone.unshift(json)
+      else billsClone[this.state.billIndex] = json
       const newState = { ...this.state, ...defaultState }
       this.setState(newState)
     }
@@ -251,81 +252,6 @@ export default class App extends Component {
     }
   }
 
-  // confirmAction = (action, info) => {
-  //   if (action) {
-  //     const room = this.state.datas[this.state.roomIndex].room
-  //     const body = JSON.stringify({
-  //       room: room,
-  //       action: action,
-  //       token: this.state.token,
-  //       name: this.state.name,
-  //       phone: this.state.phone,
-  //       email: this.state.email,
-  //       dien: this.state.dien,
-  //       nuoc: this.state.nuoc,
-  //       nha: this.state.nha,
-  //       month: this.state.month,
-  //       year: this.state.year,
-  //       deposit: this.state.deposit,
-  //       onlyDeposit: this.state.onlyDeposit,
-  //       khac: {
-  //         khoan: this.state.thukhac,
-  //         tien: typeof this.state.tienthukhac === 'number' ? this.state.tienthukhac : 0,
-  //       },
-  //       chi: {
-  //         khoan: this.state.chi,
-  //         tien: typeof this.state.tienchi === 'number' ? 0 - this.state.tienchi : 0,
-  //       },
-  //       thuchi: this.state.thuchiClone,
-  //       billStatus: this.state.billIndex ? 'inactive' : 'active',
-  //       preout: info,
-  //     })
-  //     console.log(body)
-  //     this.setState({ loading: true, notice: 'Đang xác nhận...' })
-  //     fetch(remote + '/chunha/action', {
-  //       method: 'post',
-  //       headers: {
-  //         'Content-Type': 'application/json',
-  //       },
-  //       body: body,
-  //     })
-  //       .then(res => {
-  //         this.setState({ loading: false, notice: 'Đang xử lý dữ liệu...' })
-  //         if (res.status === 200) {
-  //           res
-  //             .json()
-  //             .then(json => {
-  //               console.log(json)
-  //               if (action === 'thuchi') {
-  //                 const clone = JSON.parse(JSON.stringify(json))
-  //                 this.setState({ thuchi: json, thuchiClone: clone, thuchiState: [] })
-  //                 this.setNotice('Lưu thành công', 2)
-  //               } else {
-  //                 const dataClone = this.state.datas.slice(0)
-  //                 dataClone[this.state.roomIndex].bills[this.state.billIndex] = json
-  //                 this.setState({
-  //                   datas: dataClone,
-  //                   notice: '',
-  //                   confirm: '',
-  //                   reg: false,
-  //                   update: false,
-  //                   onlyDeposit: false,
-  //                   dien: json.dien,
-  //                   nuoc: json.nuoc,
-  //                   billIndex: 0,
-  //                 })
-  //               }
-  //             })
-  //             .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
-  //         } else if (res.status === 406) {
-  //           this.setState({ datas: [], token: '', notice: 'Auth reject' })
-  //           localStorage.removeItem('adminToken')
-  //         } else this.setState({ notice: 'Không có dữ liệu' })
-  //       })
-  //       .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
-  //   }
-  // }
-
   handleLoginResponse = json => {
     console.log(json)
     localStorage.setItem('adminToken', json.token)
@@ -344,7 +270,7 @@ export default class App extends Component {
     })
   }
 
-  fetchServer = async (body, isLogin) => {
+  fetchServer = (body, isLogin) => {
     const address = `${remote}/chunha${isLogin ? '' : '/action'}`
     return fetch(address, {
       method: 'post',
