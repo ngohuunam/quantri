@@ -1,6 +1,7 @@
 import './style'
 import { Component } from 'preact'
 import myState from './state.js'
+import defaultState from './state-default.js'
 
 const apiVer = 3
 
@@ -85,6 +86,7 @@ export default class App extends Component {
   btnClick = event => {
     event.preventDefault()
     const eventName = event.target.name
+    let body
     switch (eventName) {
       case 'deposit-btn':
         this.setState({ onlyDeposit: true, reg: true })
@@ -112,7 +114,7 @@ export default class App extends Component {
         else this.setState({ roomIndex: this.state.datas.length - 1 })
         break
       case 'purchase-confirm-btn':
-        this.confirmAction(this.state.confirm)
+        this.sendAction(this.state.confirm)
         break
       case 'purchase-cancel-btn':
         this.setState({ confirm: '', billIndex: 0 })
@@ -121,30 +123,26 @@ export default class App extends Component {
         this.setState({ onlyDeposit: false, reg: false })
         break
       case 'reg-btn':
-        this.setState({
-          reg: true,
-          dien: 0,
-          nuoc: 0,
-        })
+        this.setState({ reg: true, dien: 0, nuoc: 0 })
         break
       case 'bill-out-btn':
-        this.confirmAction('update', 'out')
+        this.sendActionUpdate('update', 'out')
         break
       case 'bill-out-cancel-btn':
-        this.confirmAction('update', 'cancel')
+        this.sendActionUpdate('update', 'cancel')
         break
       case 'deposited-btn':
       case 'in-btn':
-        this.confirmAction(eventName.slice(0, -4))
+        this.sendActionUpdate(eventName.slice(0, -4))
         break
       case 'update-confirm-btn':
-        this.confirmAction('update')
+        this.sendActionUpdate('update')
         break
       case 'update-cancel-btn':
-        this.setState({ update: false, billIndex: 0 })
+        this.setState({ update: false, chi: '', tienchi: '', thukhac: '', tienthukhac: '', billIndex: 0 })
         break
       case 'paid-cancel-btn':
-        this.confirmAction('paid-cancel')
+        this.sendAction('paid-cancel')
         break
       case 'open-thuchi-btn':
         this.setState({ openThuchi: true })
@@ -161,6 +159,59 @@ export default class App extends Component {
     }
   }
 
+  sendActionUpdate = (action, preout) => {
+    const props = ['dien', 'nuoc', 'nha']
+    const body = {}
+    props.map(prop => {
+      if (this.state[prop] !== '') body[prop] = this.state[prop]
+    })
+    const { chi, tienchi, thukhac, tienthukhac } = this.state
+    if (chi || (typeof tienchi !== 'number' && tienchi !== 0)) body.chi = { khoan: chi, tien: tienchi }
+    if (thukhac || (typeof tienthukhac !== 'number' && tienthukhac !== 0)) body.khac = { khoan: thukhac, tien: tienthukhac }
+    if (preout) body.preout = preout
+    if (action !== 'update') {
+      const propsIn = ['name', 'phone', 'email', 'deposit', 'onlyDeposit']
+      propsIn.map(prop => {
+        if (this.state[prop]) body[prop] = this.state[prop]
+      })
+    }
+    this.sendAction(action, body)
+  }
+
+  sendAction = (action, body, notice) => {
+    const { token, year, month, billIndex, datas, roomIndex } = this.state
+    body = { ...body, ...{ token: token, year: year, month: month, action: action, billStatus: billIndex ? 'inactive' : 'active' } }
+    if (!body.room) body.room = datas[roomIndex].room
+    console.log(body)
+    this.setState({ loading: true, notice: notice || 'Đang lưu...' })
+    this.fetchServer(body)
+      .then(res => {
+        this.setState({ loading: false })
+        if (res.status === 200)
+          res
+            .json()
+            .then(json => this.handleResponse(action, json))
+            .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
+        else this.handleErrRes(res)
+      })
+      .catch(e => this.setState({ loading: false, notice: `Có lỗi: ${e.name}: ${e.message}` }))
+  }
+
+  handleResponse = (action, json) => {
+    console.log('reponse', json)
+    if (action === 'thuchi') {
+      const clone = JSON.parse(JSON.stringify(json))
+      this.setState({ thuchi: json, thuchiClone: clone, thuchiState: [], loading: false, notice: '' })
+      this.setNotice('Lưu thành công', 2)
+    } else {
+      const dataClone = this.state.datas.slice(0)
+      if (action === 'update') dataClone[this.state.roomIndex].bills[this.state.billIndex] = json
+      else dataClone[this.state.roomIndex].bills.unshift(json)
+      const newState = { ...this.state, ...defaultState }
+      this.setState(newState)
+    }
+  }
+
   setNotice = (text, time) => {
     this.setState({ notice: text })
     setTimeout(() => this.setState({ notice: '' }), time * 1000)
@@ -172,7 +223,7 @@ export default class App extends Component {
     else {
       const thuchiStr = JSON.stringify(this.state.thuchi)
       const thuchiCloneStr = JSON.stringify(this.state.thuchiClone)
-      if (thuchiStr !== thuchiCloneStr) this.confirmAction('thuchi')
+      if (thuchiStr !== thuchiCloneStr) this.sendAction('thuchi', { thuchi: this.state.thuchiClone, room: 'chunha' })
       else this.setNotice('Không có gì thay đổi', 2)
     }
   }
@@ -186,138 +237,139 @@ export default class App extends Component {
     this.setState({ thuchiClone: _thuchiClone, thuchiState: _thuchiState })
   }
 
-  confirmAction = (action, info) => {
-    if (action) {
-      const room = this.state.datas[this.state.roomIndex].room
-      const body = JSON.stringify({
-        room: room,
-        action: action,
-        token: this.state.token,
-        name: this.state.name,
-        phone: this.state.phone,
-        email: this.state.email,
-        dien: this.state.dien,
-        nuoc: this.state.nuoc,
-        nha: this.state.nha,
-        month: this.state.month,
-        year: this.state.year,
-        deposit: this.state.deposit,
-        onlyDeposit: this.state.onlyDeposit,
-        khac: {
-          khoan: this.state.thukhac,
-          tien: typeof this.state.tienthukhac === 'number' ? this.state.tienthukhac : 0,
-        },
-        chi: {
-          khoan: this.state.chi,
-          tien: typeof this.state.tienchi === 'number' ? 0 - this.state.tienchi : 0,
-        },
-        thuchi: this.state.thuchiClone,
-        billStatus: this.state.billIndex ? 'inactive' : 'active',
-        preout: info,
-      })
-      console.log(body)
-      this.setState({ loading: true, notice: 'Đang xác nhận...' })
-      fetch(remote + '/chunha/action', {
-        method: 'post',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: body,
-      })
-        .then(res => {
-          this.setState({ loading: false, notice: 'Đang xử lý dữ liệu...' })
-          if (res.status === 200) {
-            res
-              .json()
-              .then(json => {
-                console.log(json)
-                if (action === 'thuchi') {
-                  const clone = JSON.parse(JSON.stringify(json))
-                  this.setState({ thuchi: json, thuchiClone: clone, thuchiState: [] })
-                  this.setNotice('Lưu thành công', 2)
-                } else {
-                  const dataClone = this.state.datas.slice(0)
-                  dataClone[this.state.roomIndex].bills[this.state.billIndex] = json
-                  this.setState({
-                    datas: dataClone,
-                    notice: '',
-                    confirm: '',
-                    reg: false,
-                    update: false,
-                    onlyDeposit: false,
-                    dien: json.dien,
-                    nuoc: json.nuoc,
-                    billIndex: 0,
-                  })
-                }
-              })
-              .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
-          } else if (res.status === 406) {
-            this.setState({ datas: [], token: '', notice: 'Auth reject' })
-            localStorage.removeItem('adminToken')
-          } else this.setState({ notice: 'Không có dữ liệu' })
-        })
-        .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
+  handleErrRes = res => {
+    switch (res.status) {
+      case 405:
+        this.setState({ notice: 'Sai Mật khẩu' })
+        break
+      case 406:
+        this.setState({ datas: [], token: '', notice: 'Auth reject' })
+        localStorage.removeItem('adminToken')
+        break
+      default:
+        this.setState({ notice: 'Dữ liệu lỗi' })
     }
+  }
+
+  // confirmAction = (action, info) => {
+  //   if (action) {
+  //     const room = this.state.datas[this.state.roomIndex].room
+  //     const body = JSON.stringify({
+  //       room: room,
+  //       action: action,
+  //       token: this.state.token,
+  //       name: this.state.name,
+  //       phone: this.state.phone,
+  //       email: this.state.email,
+  //       dien: this.state.dien,
+  //       nuoc: this.state.nuoc,
+  //       nha: this.state.nha,
+  //       month: this.state.month,
+  //       year: this.state.year,
+  //       deposit: this.state.deposit,
+  //       onlyDeposit: this.state.onlyDeposit,
+  //       khac: {
+  //         khoan: this.state.thukhac,
+  //         tien: typeof this.state.tienthukhac === 'number' ? this.state.tienthukhac : 0,
+  //       },
+  //       chi: {
+  //         khoan: this.state.chi,
+  //         tien: typeof this.state.tienchi === 'number' ? 0 - this.state.tienchi : 0,
+  //       },
+  //       thuchi: this.state.thuchiClone,
+  //       billStatus: this.state.billIndex ? 'inactive' : 'active',
+  //       preout: info,
+  //     })
+  //     console.log(body)
+  //     this.setState({ loading: true, notice: 'Đang xác nhận...' })
+  //     fetch(remote + '/chunha/action', {
+  //       method: 'post',
+  //       headers: {
+  //         'Content-Type': 'application/json',
+  //       },
+  //       body: body,
+  //     })
+  //       .then(res => {
+  //         this.setState({ loading: false, notice: 'Đang xử lý dữ liệu...' })
+  //         if (res.status === 200) {
+  //           res
+  //             .json()
+  //             .then(json => {
+  //               console.log(json)
+  //               if (action === 'thuchi') {
+  //                 const clone = JSON.parse(JSON.stringify(json))
+  //                 this.setState({ thuchi: json, thuchiClone: clone, thuchiState: [] })
+  //                 this.setNotice('Lưu thành công', 2)
+  //               } else {
+  //                 const dataClone = this.state.datas.slice(0)
+  //                 dataClone[this.state.roomIndex].bills[this.state.billIndex] = json
+  //                 this.setState({
+  //                   datas: dataClone,
+  //                   notice: '',
+  //                   confirm: '',
+  //                   reg: false,
+  //                   update: false,
+  //                   onlyDeposit: false,
+  //                   dien: json.dien,
+  //                   nuoc: json.nuoc,
+  //                   billIndex: 0,
+  //                 })
+  //               }
+  //             })
+  //             .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
+  //         } else if (res.status === 406) {
+  //           this.setState({ datas: [], token: '', notice: 'Auth reject' })
+  //           localStorage.removeItem('adminToken')
+  //         } else this.setState({ notice: 'Không có dữ liệu' })
+  //       })
+  //       .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
+  //   }
+  // }
+
+  handleLoginResponse = json => {
+    console.log(json)
+    localStorage.setItem('adminToken', json.token)
+    // const LEN = process.env.NODE_ENV === 'production' ? 18 : 18
+    const LEN = 18
+    const thuchi = json.datas[19].bills.length ? json.datas[19].bills[0].datas : []
+    const thuchiClone = thuchi.length ? JSON.parse(JSON.stringify(thuchi)) : []
+    this.setState({
+      datas: json.datas.slice(0, LEN),
+      token: json.token,
+      notice: '',
+      sthChanged: false,
+      thuchi: thuchi,
+      thuchiClone: thuchiClone,
+      dialog: false,
+    })
+  }
+
+  fetchServer = async (body, isLogin) => {
+    const address = `${remote}/chunha${isLogin ? '' : '/action'}`
+    return fetch(address, {
+      method: 'post',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
   }
 
   login = () => {
     if (this.state.sthChanged) {
-      const body = JSON.stringify({
-        room: '123',
-        pass: this.state.pass,
-        token: this.state.token,
-        month: this.state.month,
-        year: this.state.year,
-      })
-      console.log('fetch body', body)
-      if (this.state.token) this.setState({ loading: true, notice: 'Đang tải dữ liệu...' })
-      else this.setState({ loading: true, notice: 'Đang đăng nhập...' })
-      fetch(remote + '/chunha', {
-        method: 'post',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: body,
-      })
+      const { pass, token, month, year } = this.state
+      const body = { room: '123', pass: pass, token: token, month: month, year: year }
+      console.log('login body', body)
+      this.setState({ loading: true, notice: this.state.token ? 'Đang tải dữ liệu...' : 'Đang đăng nhập...' })
+      this.fetchServer(body, true)
         .then(res => {
-          // console.log(res.status)
-          this.setState({
-            loading: false,
-            notice: `Tải xong dữ liệu, đang chuyển trang`,
-            dialog: false,
-          })
-          if (res.status === 200) {
+          this.setState({ loading: false })
+          if (res.status === 200)
             res
               .json()
-              .then(json => {
-                console.log(json)
-                localStorage.setItem('adminToken', json.token)
-                const LEN = process.env.NODE_ENV === 'production' ? 18 : 18
-                // const LEN = 18
-                const thuchi = json.datas[19].bills.length ? json.datas[19].bills[0].datas : []
-                const thuchiClone = thuchi.length ? JSON.parse(JSON.stringify(thuchi)) : []
-                this.setState({
-                  datas: json.datas.slice(0, LEN),
-                  token: json.token,
-                  notice: '',
-                  sthChanged: false,
-                  thuchi: thuchi,
-                  thuchiClone: thuchiClone,
-                })
-              })
+              .then(json => this.handleLoginResponse(json))
               .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
-          } else if (res.status === 405) this.setState({ notice: 'Sai Mật khẩu' })
-          else if (res.status === 406) {
-            this.setState({
-              datas: [],
-              token: '',
-              notice: 'Auth reject',
-            })
-            localStorage.removeItem('adminToken')
-          } else this.setState({ notice: 'Không có dữ liệu' })
+          else this.handleErrRes(res)
         })
-        .catch(e => this.setState({ notice: `Có lỗi: ${e.name}: ${e.message}` }))
+        .catch(e => this.setState({ loading: false, notice: `Có lỗi: ${e.name}: ${e.message}` }))
     } else this.setState({ dialog: false })
   }
 
@@ -468,6 +520,10 @@ export default class App extends Component {
         dien: bill.dien.sokynay || bill.dien.sokytruoc,
         nuoc: bill.nuoc.sokynay || bill.nuoc.sokytruoc,
         nha: '',
+        chi: bill.chi.khoan,
+        tienchi: bill.chi.tien,
+        thukhac: bill.khac.khoan,
+        tienthukhac: bill.khac.tien,
         billIndex: idx,
       })
     const purchaseBtnAction = () => this.setState({ confirm: btnName, billIndex: idx })

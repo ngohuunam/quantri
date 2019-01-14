@@ -1,19 +1,9 @@
-const state = {
-  room: '',
+const defaultState = {
   loading: false,
   notice: '',
-  datas: [],
-  roomIndex: 0,
   billIndex: 0,
   confirm: '',
-  showAll: true,
-  sthChanged: true,
-  month: 1,
-  months: [],
-  year: 2018,
-  years: [],
   dialog: false,
-  token: '',
   report: false,
   reg: false,
   update: false,
@@ -30,10 +20,6 @@ const state = {
   chi: '',
   tienchi: '',
   openThuchi: false,
-  thuchi: [],
-  thuchiState: [],
-  thuchiClone: [],
-  ver: '20190114.2325',
 }
 
-export default state
+export default defaultState
