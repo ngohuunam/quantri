@@ -168,7 +168,7 @@ export default class App extends Component {
 
   thuchiSaveToServer = () => {
     const isEditingThuchi = this.state.thuchiState.some(st => st === 'edit')
-    if (isEditingThuchi) this.setNotice('Đang thay đổi, hoàn thanh thay đổi trước khi lưu lên server', 2)
+    if (isEditingThuchi) this.setNotice('Lưu thay đổi trước khi lưu lên server', 2)
     else {
       const thuchiStr = JSON.stringify(this.state.thuchi)
       const thuchiCloneStr = JSON.stringify(this.state.thuchiClone)
@@ -293,7 +293,7 @@ export default class App extends Component {
               .then(json => {
                 console.log(json)
                 localStorage.setItem('adminToken', json.token)
-                const LEN = process.env.NODE_ENV === 'production' ? 18 : 19
+                const LEN = process.env.NODE_ENV === 'production' ? 18 : 18
                 // const LEN = 18
                 const thuchi = json.datas[19].bills.length ? json.datas[19].bills[0].datas : []
                 const thuchiClone = thuchi.length ? JSON.parse(JSON.stringify(thuchi)) : []
@@ -929,6 +929,10 @@ export default class App extends Component {
       tiendien: 0,
       nuoctieuthu: 0,
       tiennuoc: 0,
+      rac: 0,
+      khac: 0,
+      chi: 0,
+      coc: 0,
     }
     datas.map(data => {
       data.bills.map(bill => {
@@ -938,47 +942,122 @@ export default class App extends Component {
         grandTotal.nuoctieuthu += bill.nuoc.tieuthu
         grandTotal.dientieuthu += bill.dien.tieuthu
         grandTotal.tiennha += bill.nha
+        grandTotal.rac += bill.rac
+        grandTotal.khac += bill.khac.tien
+        grandTotal.chi += bill.chi && bill.chi.tien ? bill.chi.tien : 0
+        grandTotal.coc += bill.deposit ? bill.deposit : 0
       })
     })
     return grandTotal
   }
 
-  renderReport = datas => {
+  calculateTongThuchi = () => {
+    let total = 0
+    this.state.thuchi.map(tc => (total += tc.tien))
+    return total
+  }
+
+  renderThuchiReport = datas => {
+    return (
+      <table class="tg small">
+        <tr class="text-center bold header">
+          <td colspan="2" onClick={() => this.setState({ dialog: true })}>
+            <h4>
+              THU CHI THÁNG {this.state.month} - {this.state.year}
+            </h4>
+          </td>
+        </tr>
+        <tr class="bold">
+          <td class="pad-right-8px">KHOẢN</td>
+          <td class="right pad-left-8px">TIỀN</td>
+        </tr>
+        {this.state.thuchi.map((tc, i) => {
+          return (
+            <tr key={i} className={i % 2 === 0 ? 'even' : ''}>
+              <td class="pad-right-8px">{tc.khoan}</td>
+              <td class="right bold pad-left-8px">{tc.tien.toLocaleString('vi')}</td>
+            </tr>
+          )
+        })}
+        <tr class="bold header">
+          <td class="pad-right-8px">TỔNG CỘNG THU CHI</td>
+          <td class="right pad-left-8px">{this.calculateTongThuchi().toLocaleString('vi')}</td>
+        </tr>
+        <tr class="bold header">
+          <td class="pad-right-8px">TỔNG CỘNG SAU CÙNG</td>
+          <td class="right pad-left-8px">{(this.calculateTongThuchi() + this.calculateGrandTotal(datas).phaithu).toLocaleString('vi')}</td>
+        </tr>
+      </table>
+    )
+  }
+
+  rederReportPage = datas => {
+    return (
+      <div>
+        {this.renderTiennhaReport(datas)}
+        <div class="page-break" />
+        {this.renderThuchiReport(datas)}
+      </div>
+    )
+  }
+
+  renderTiennhaReport = datas => {
     const flaternBills = []
     datas.map(data => data.bills.map(bill => flaternBills.push(bill)))
     return (
       <table class="tg">
-        <tr class="bold header" onClick={() => this.setState({ dialog: true })}>
-          <th colspan="20">
+        <tr class="text-center bold header">
+          <td class="only-print" colspan="20">
             <h4>
               TIỀN NHÀ THÁNG {this.state.month} - {this.state.year}
             </h4>
-          </th>
+          </td>
+          <td class="no-print" colspan="16" onClick={() => this.setState({ dialog: true })}>
+            <h4>
+              TIỀN NHÀ THÁNG {this.state.month} - {this.state.year}
+            </h4>
+          </td>
+          <td colspan="2" class="no-print" onClick={() => window.print()}>
+            <h4>In</h4>
+          </td>
+          <td colspan="2" class="no-print" onClick={() => this.setState({ report: false })}>
+            <h4>Quay lại</h4>
+          </td>
         </tr>
         <tr class="bold">
-          <th rowspan="2">PHÒNG</th>
-          <th rowspan="2">TIỀN NHÀ</th>
-          <th colspan="5">ĐIỆN</th>
-          <th colspan="5">NƯỚC</th>
-          <th rowspan="2">RÁC</th>
-          <th rowspan="2">CỘNG</th>
-          <th rowspan="2">XÁC NHẬN</th>
+          <td rowspan="3">PHÒNG</td>
+          <td rowspan="3">TIỀN NHÀ</td>
+          <td colspan="5">ĐIỆN</td>
+          <td colspan="5">NƯỚC</td>
+          <td rowspan="3">RÁC</td>
+          <td colspan="5">KHÁC</td>
+          <td rowspan="3">CỘNG</td>
+          <td rowspan="3">XÁC NHẬN</td>
         </tr>
         <tr class="bold">
-          <td>Kỳ trước</td>
-          <td>Kỳ này</td>
-          <td>Tiêu thụ</td>
-          <td>Giá</td>
-          <td>Thành tiền</td>
-          <td>Kỳ trước</td>
-          <td>Kỳ này</td>
-          <td>Tiêu thụ</td>
-          <td>Giá</td>
-          <td>Thành tiền</td>
+          <td rowspan="2">Kỳ trước</td>
+          <td rowspan="2">Kỳ này</td>
+          <td rowspan="2">Tiêu thụ</td>
+          <td rowspan="2">Giá</td>
+          <td rowspan="2">Thành tiền</td>
+          <td rowspan="2">Kỳ trước</td>
+          <td rowspan="2">Kỳ này</td>
+          <td rowspan="2">Tiêu thụ</td>
+          <td rowspan="2">Giá</td>
+          <td rowspan="2">Thành tiền</td>
+          <td colspan="2">Chi</td>
+          <td colspan="2">Thu</td>
+          <td rowspan="2">Cọc</td>
+        </tr>
+        <tr class="bold">
+          <td>Khoản</td>
+          <td>Tiền</td>
+          <td>Khoản</td>
+          <td>Tiền</td>
         </tr>
         {flaternBills.map((d, i) => {
           return (
-            <tr key={i}>
+            <tr key={i} className={i % 2 === 0 ? 'even' : ''}>
               <td>{d.room}</td>
               <td class="right bold">{d.nha.toLocaleString('vi')}</td>
               <td>{d.dien.sokytruoc.toLocaleString('vi')}</td>
@@ -992,35 +1071,52 @@ export default class App extends Component {
               <td>{d.nuoc.gia.toLocaleString('vi')}</td>
               <td class="right bold">{d.nuoc.thanhtien.toLocaleString('vi')}</td>
               <td class="right bold">{d.rac.toLocaleString('vi')}</td>
+              <td class="right bold">{d.chi && d.chi.khoan ? d.chi.khoan : ''}</td>
+              <td class="right bold">{d.chi && d.chi.tien ? d.chi.tien.toLocaleString('vi') : 0}</td>
+              <td class="right bold">{d.khac.khoan ? d.khac.khoan : ''}</td>
+              <td class="right bold">{d.khac.tien ? d.khac.tien.toLocaleString('vi') : 0}</td>
+              <td class="right bold">{d.deposit ? d.deposit.toLocaleString('vi') : 0}</td>
               <td class="right bold">{d.tongcong.toLocaleString('vi')}</td>
               <td />
             </tr>
           )
         })}
         <tr class="bold header">
-          <th colspan="2" onClick={() => window.print()}>
-            <h4 class="no-print right">{this.calculateGrandTotal(datas).tiennha.toLocaleString('vi')}</h4>
-          </th>
-          <th colspan="2" onClick={() => window.print()} />
-          <th colspan="1" onClick={() => window.print()}>
+          <td colspan="2">
+            <h4>{this.calculateGrandTotal(datas).tiennha.toLocaleString('vi')}</h4>
+          </td>
+          <td colspan="2" />
+          <td>
             <h4>{this.calculateGrandTotal(datas).dientieuthu.toLocaleString('vi')}</h4>
-          </th>
-          <th colspan="2" onClick={() => window.print()}>
-            <h4 class="no-print right">{this.calculateGrandTotal(datas).tiendien.toLocaleString('vi')}</h4>
-          </th>
-          <th colspan="2" onClick={() => window.print()} />
-          <th colspan="1" onClick={() => window.print()}>
+          </td>
+          <td colspan="2">
+            <h4>{this.calculateGrandTotal(datas).tiendien.toLocaleString('vi')}</h4>
+          </td>
+          <td colspan="2" />
+          <td>
             <h4>{this.calculateGrandTotal(datas).nuoctieuthu.toLocaleString('vi')}</h4>
-          </th>
-          <th colspan="2" onClick={() => window.print()}>
-            <h4 class="no-print right">{this.calculateGrandTotal(datas).tiennuoc.toLocaleString('vi')}</h4>
-          </th>
-          <th colspan="2" onClick={() => window.print()}>
-            <h4 class="no-print right">{this.calculateGrandTotal(datas).phaithu.toLocaleString('vi')}</h4>
-          </th>
-          <th onClick={() => this.setState({ report: false })}>
+          </td>
+          <td colspan="2">
+            <h4>{this.calculateGrandTotal(datas).tiennuoc.toLocaleString('vi')}</h4>
+          </td>
+          <td>
+            <h4>{this.calculateGrandTotal(datas).rac.toLocaleString('vi')}</h4>
+          </td>
+          <td colspan="2">
+            <h4>{this.calculateGrandTotal(datas).chi.toLocaleString('vi')}</h4>
+          </td>
+          <td colspan="2">
+            <h4>{this.calculateGrandTotal(datas).khac.toLocaleString('vi')}</h4>
+          </td>
+          <td>
+            <h4>{this.calculateGrandTotal(datas).coc.toLocaleString('vi')}</h4>
+          </td>
+          <td>
+            <h4>{this.calculateGrandTotal(datas).phaithu.toLocaleString('vi')}</h4>
+          </td>
+          <td onClick={() => this.setState({ report: false })}>
             <h4 class="no-print">{'<<<'}</h4>
-          </th>
+          </td>
         </tr>
       </table>
     )
@@ -1030,7 +1126,7 @@ export default class App extends Component {
     if (typeof window !== 'undefined') window.scroll(0, 0)
     if (token) {
       if (dialog) return this.renderSelectMonthYear()
-      else if (report) return this.renderReport(datas)
+      else if (report) return this.rederReportPage(datas)
       else if (openThuchi) return this.renderThuChiPage()
       else {
         if (datas.length) {

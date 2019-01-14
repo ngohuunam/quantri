@@ -267,6 +267,14 @@ button.large {
   box-shadow: 0.2vw 0.2vw 0.5vw rgba(0, 0, 0, 0.4);
 }
 
+.pad-right-8px {
+  padding-right: 16px !important;
+}
+
+.pad-left-8px {
+  padding-left: 16px !important;
+}
+
 .tg {
   border-collapse: collapse;
   border-spacing: 0;
@@ -275,6 +283,17 @@ button.large {
   text-align: center;
   font-size: 10pt !important;
 }
+.tg.small {
+  width: auto;
+  height: auto;
+  text-align: left;
+}
+.only-print,
+.page-break,
+.hidden {
+  display: none;
+}
+
 .tg td,
 .tg th {
   padding: 8px 5px;
@@ -282,15 +301,10 @@ button.large {
   border-width: 1px;
   border-color: rgb(214, 214, 214);
 }
-.tg tr:nth-child(4),
-.tg tr:nth-child(6),
-.tg tr:nth-child(8),
-.tg tr:nth-child(10),
-.tg tr:nth-child(12),
-.tg tr:nth-child(14),
-.tg tr:nth-child(16),
-.tg tr:nth-child(18),
-.tg tr:nth-child(20) {
+.tg th > h4 {
+  text-align: right;
+}
+.tg tr.even {
   background-color: rgb(240, 240, 240);
 }
 .bold {
@@ -298,6 +312,9 @@ button.large {
 }
 .right {
   text-align: right !important;
+}
+.text-center {
+  text-align: center !important;
 }
 
 .mar-top-8px {
@@ -377,10 +394,6 @@ button.large {
   padding: 10px 0;
 }
 
-.bold {
-  font-weight: bold;
-}
-
 .border-bottom {
   border-bottom: 1px solid rgb(153, 153, 204);
 }
@@ -414,10 +427,6 @@ button.large {
   font-size: 1rem;
   padding: 8px;
   margin-bottom: 8px;
-}
-
-.hidden {
-  display: none !important;
 }
 
 .dialog-mask {
@@ -576,6 +585,16 @@ button.large {
 }
 
 @media print {
+  .only-print {
+    display: table-cell;
+    vertical-align: inherit;
+  }
+
+  .page-break {
+    display: block;
+    page-break-before: always;
+  }
+
   .no-print,
   .version {
     display: none;
@@ -585,15 +604,7 @@ button.large {
     background-color: none;
     color: black;
   }
-  .tg tr:nth-child(4),
-  .tg tr:nth-child(6),
-  .tg tr:nth-child(8),
-  .tg tr:nth-child(10),
-  .tg tr:nth-child(12),
-  .tg tr:nth-child(14),
-  .tg tr:nth-child(16),
-  .tg tr:nth-child(18),
-  .tg tr:nth-child(20) {
+  .tg tr {
     background-color: rgb(240, 240, 240);
   }
 }
