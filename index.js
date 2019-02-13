@@ -437,8 +437,8 @@ export default class App extends Component {
     const btnClass = mainBtnStatus.className
     const isDisabled = mainBtnStatus.disabled
     const btnText = mainBtnStatus.label
-    const regBtnClass = !idx && (!bill || bill.onlyDeposit || (bill && bill.out && bill.thanhtoan)) ? '' : 'hidden'
-    const depositBtnClass = !idx && (!bill || (bill && bill.out && bill.thanhtoan && !bill.deposit)) ? '' : 'hidden'
+    const regBtnClass = idx !== null && (!bill || bill.onlyDeposit || (bill && bill.out && bill.thanhtoan)) ? '' : 'hidden'
+    const depositBtnClass = idx !== null && (!bill || (bill && bill.out && bill.thanhtoan && !bill.deposit)) ? '' : 'hidden'
     const updateBtnClass = bill ? '' : 'hidden'
     const updateBtnAction = () =>
       this.setState({
@@ -453,6 +453,8 @@ export default class App extends Component {
         billIndex: idx,
       })
     const purchaseBtnAction = () => this.setState({ confirm: btnName, billIndex: idx })
+    console.log('prev', prev)
+    console.log('next', next)
     return (
       <div>
         {this.renderBill(bill)}
@@ -477,7 +479,7 @@ export default class App extends Component {
 
   renderBills = (bills, prev, next) => {
     if (bills.length) return <div>{bills.map((bill, idx) => this.renderRoomButton(bill, idx, prev, next))}</div>
-    else return <div>{this.renderRoomButton(false, prev, next)}</div>
+    else return <div>{this.renderRoomButton(false, null, prev, next)}</div>
   }
 
   renderRoom = datas => {
@@ -497,6 +499,8 @@ export default class App extends Component {
         prev = datas[index - 1]
         next = datas[0]
       }
+      // console.log('prev', prev)
+      // console.log('next', next)
       return (
         <div class="app">
           <h2>{`${d.room} - ${d.month}/${d.year}`}</h2>
