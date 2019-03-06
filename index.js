@@ -437,8 +437,11 @@ export default class App extends Component {
     const btnClass = mainBtnStatus.className
     const isDisabled = mainBtnStatus.disabled
     const btnText = mainBtnStatus.label
-    const regBtnClass = idx !== null && (!bill || bill.onlyDeposit || (bill && bill.out && bill.thanhtoan)) ? '' : 'hidden'
-    const depositBtnClass = idx !== null && (!bill || (bill && bill.out && bill.thanhtoan && !bill.deposit)) ? '' : 'hidden'
+    console.log('bill', bill)
+    console.log('idx', idx)
+    const regBtnClass = !bill || (bill && bill.onlyDeposit) || (bill && bill.out && bill.thanhtoan) ? '' : 'hidden'
+    console.log('regBtnClass', regBtnClass)
+    const depositBtnClass = !bill || (bill && bill.out && bill.thanhtoan && !bill.deposit) ? '' : 'hidden'
     const updateBtnClass = bill ? '' : 'hidden'
     const updateBtnAction = () =>
       this.setState({
@@ -453,8 +456,8 @@ export default class App extends Component {
         billIndex: idx,
       })
     const purchaseBtnAction = () => this.setState({ confirm: btnName, billIndex: idx })
-    console.log('prev', prev)
-    console.log('next', next)
+    // console.log('prev', prev)
+    // console.log('next', next)
     return (
       <div>
         {this.renderBill(bill)}
