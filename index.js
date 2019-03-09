@@ -18,19 +18,18 @@ export default class App extends Component {
     const DATE = new Date()
     const toDay = DATE.getDate()
     const monthIndex = DATE.getMonth()
-    let currentMonth = monthIndex + toDay > 5 ? 1 : 0
     const currentYear = DATE.getFullYear()
+    let currentMonth = toDay > 5 ? monthIndex : monthIndex - 1
     let MONTHS
-    if (year === 2018) {
-      if (toDay > 5) {
-        MONTHS = _MONTHS.slice(8)
-        currentMonth = 12
-      } else {
-        MONTHS = _MONTHS.slice(8, 11)
-        currentMonth = 11
-      }
-    } else if (year === currentYear) MONTHS = _MONTHS.slice(0, currentMonth)
+    if (currentMonth < 1) {
+      year = year - 1
+      currentMonth = 12
+    }
+    console.log('currentMonth', currentMonth)
+    if (year === 2018) MONTHS = _MONTHS.slice(8, 12)
+    else if (year === currentYear) MONTHS = _MONTHS.slice(0, currentMonth)
     else MONTHS = _MONTHS
+    console.log('MONTHS', MONTHS)
     this.setState({ month: currentMonth, year: year, months: MONTHS.reverse(), sthChanged: true })
   }
 
