@@ -7,7 +7,7 @@ const apiVer = 3
 
 const remote =
   process.env.NODE_ENV === 'production'
-    ? 'https://busti.club/v' + apiVer + '/nhatro'
+    ? 'https://nhatroconhuong.com/v' + apiVer + '/nhatro'
     : 'http://' + location.hostname + ':5000/v' + apiVer + '/nhatro'
 
 export default class App extends Component {
