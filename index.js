@@ -1134,8 +1134,7 @@ export default class App extends Component {
       <div>
         {this.renderLoading()}
         {this.renderPage(token, showAll, dialog, datas, report, reg, update, roomIndex, billIndex, openThuchi)}
-        <div class="version">client: {ver}</div>
-        <div class="version">server: {sv}</div>
+        <div class="version">client: {ver} - server: {sv}</div>
       </div>
     )
   }
