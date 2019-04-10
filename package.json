@@ -17,8 +17,8 @@
     "build/*"
   ],
   "devDependencies": {
-    "eslint": "^5.15.1",
-    "eslint-config-synacor": "^3.0.3",
+    "eslint": "^5.16.0",
+    "eslint-config-synacor": "^3.0.4",
     "if-env": "^1.0.4",
     "preact-cli": "^2.2.1",
     "uglifyjs-webpack-plugin": "^2.1.2"

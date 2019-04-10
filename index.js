@@ -10,6 +10,8 @@ const remote =
     ? 'https://nhatroconhuong.com/v' + apiVer + '/nhatro'
     : 'http://' + location.hostname + ':5000/v' + apiVer + '/nhatro'
 
+const pw = process.env.NODE_ENV === 'production' ? '' : '123Bistqt'
+
 export default class App extends Component {
   state = myState
 
@@ -44,7 +46,7 @@ export default class App extends Component {
       YEARS.unshift(y)
       y++
     }
-    this.setState({ years: YEARS })
+    this.setState({ years: YEARS, pass: pw })
     if (M) this.calculateMonths(YEAR)
     else this.calculateMonths(YEAR - 1)
   }
@@ -85,7 +87,6 @@ export default class App extends Component {
   btnClick = event => {
     event.preventDefault()
     const eventName = event.target.name
-    let body
     switch (eventName) {
       case 'deposit-btn':
         this.setState({ onlyDeposit: true, reg: true })
@@ -185,6 +186,7 @@ export default class App extends Component {
     this.setState({ loading: true, notice: notice || 'Đang lưu...' })
     this.fetchServer(body)
       .then(res => {
+        console.log('sendAction res', res)
         this.setState({ loading: false })
         if (res.status === 200)
           res
@@ -286,7 +288,7 @@ export default class App extends Component {
       this.setState({ loading: true, notice: this.state.token ? 'Đang tải dữ liệu...' : 'Đang đăng nhập...' })
       this.fetchServer(body, true)
         .then(res => {
-          this.setState({ loading: false })
+          this.setState({ loading: false, sv: res.headers.get('Content-Language') })
           if (res.status === 200)
             res
               .json()
@@ -1127,12 +1129,13 @@ export default class App extends Component {
     } else return this.renderLogin()
   }
 
-  render({}, { token, showAll, dialog, datas, report, reg, ver, update, roomIndex, billIndex, openThuchi }) {
+  render({}, { token, showAll, dialog, datas, report, reg, ver, sv, update, roomIndex, billIndex, openThuchi }) {
     return (
       <div>
         {this.renderLoading()}
         {this.renderPage(token, showAll, dialog, datas, report, reg, update, roomIndex, billIndex, openThuchi)}
-        <div class="version">{ver}</div>
+        <div class="version">client: {ver}</div>
+        <div class="version">server: {sv}</div>
       </div>
     )
   }
