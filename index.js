@@ -180,7 +180,7 @@ export default class App extends Component {
 
   sendAction = (action, body, notice) => {
     const { token, year, month, billIndex, datas, roomIndex } = this.state
-    body = { ...body, ...{ token: token, year: year, month: month, action: action, billStatus: billIndex ? 'inactive' : 'active' } }
+    body = { ...body, ...{ token: token, year: year, month: month, action: action, billStatus: datas[roomIndex].bills[billIndex] ? 'inactive' : 'active' } }
     if (!body.room) body.room = datas[roomIndex].room
     console.log(body)
     this.setState({ loading: true, notice: notice || 'Đang lưu...' })
