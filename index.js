@@ -180,7 +180,17 @@ export default class App extends Component {
 
   sendAction = (action, body, notice) => {
     const { token, year, month, billIndex, datas, roomIndex } = this.state
-    body = { ...body, ...{ token: token, year: year, month: month, action: action, billStatus: datas[roomIndex].bills[billIndex] ? 'inactive' : 'active' } }
+    const isActive = !datas[roomIndex].bills[billIndex].out
+    body = {
+      ...body,
+      ...{
+        token: token,
+        year: year,
+        month: month,
+        action: action,
+        billStatus: isActive ? 'active' : 'inactive',
+      },
+    }
     if (!body.room) body.room = datas[roomIndex].room
     console.log(body)
     this.setState({ loading: true, notice: notice || 'Đang lưu...' })
@@ -1134,7 +1144,9 @@ export default class App extends Component {
       <div>
         {this.renderLoading()}
         {this.renderPage(token, showAll, dialog, datas, report, reg, update, roomIndex, billIndex, openThuchi)}
-        <div class="version">client: {ver} - server: {sv}</div>
+        <div class="version">
+          client: {ver} - server: {sv}
+        </div>
       </div>
     )
   }
