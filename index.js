@@ -180,7 +180,6 @@ export default class App extends Component {
 
   sendAction = (action, body, notice) => {
     const { token, year, month, billIndex, datas, roomIndex } = this.state
-    const isActive = !datas[roomIndex].bills[billIndex].out
     body = {
       ...body,
       ...{
@@ -188,9 +187,9 @@ export default class App extends Component {
         year: year,
         month: month,
         action: action,
-        billStatus: isActive ? 'active' : 'inactive',
       },
     }
+    if (action !== 'in' && action !== 'deposited') body.billStatus = datas[roomIndex].bills[billIndex].inactive
     if (!body.room) body.room = datas[roomIndex].room
     console.log(body)
     this.setState({ loading: true, notice: notice || 'Đang lưu...' })
