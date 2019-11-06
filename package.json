@@ -17,15 +17,15 @@
     "build/*"
   ],
   "devDependencies": {
-    "eslint": "^5.16.0",
-    "eslint-config-synacor": "^3.0.4",
+    "eslint": "^6.6.0",
+    "eslint-config-synacor": "^3.0.5",
     "if-env": "^1.0.4",
     "preact-cli": "^2.2.1",
-    "uglifyjs-webpack-plugin": "^2.1.2"
+    "uglifyjs-webpack-plugin": "^2.2.0"
   },
   "dependencies": {
-    "preact": "^8.4.2",
-    "acorn": "^6.1.1",
-    "preact-compat": "^3.18.5"
+    "preact": "^10.0.4",
+    "acorn": "^7.1.0",
+    "preact-compat": "^3.19.0"
   }
 }

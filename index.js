@@ -113,8 +113,11 @@ export default class App extends Component {
         if (this.state.roomIndex) this.setState({ roomIndex: this.state.roomIndex - 1 })
         else this.setState({ roomIndex: this.state.datas.length - 1 })
         break
-      case 'purchase-confirm-btn':
+      case 'purchase-cash-btn':
         this.sendAction(this.state.confirm)
+        break
+      case 'purchase-bank-btn':
+        this.sendAction(this.state.confirm, { bank: true })
         break
       case 'purchase-cancel-btn':
         this.setState({ confirm: '', billIndex: 0 })
@@ -142,7 +145,10 @@ export default class App extends Component {
         this.setState({ update: false, chi: '', tienchi: '', thukhac: '', tienthukhac: '', billIndex: 0 })
         break
       case 'paid-cancel-btn':
-        this.sendAction('paid-cancel')
+        this.sendAction('paid-cancel', {}, 'Đang Hủy Thanh toán ...')
+        break
+      case 'change-method-btn':
+        this.sendAction('change-method', {}, 'Đang Thay đổi ...')
         break
       case 'open-thuchi-btn':
         this.setState({ openThuchi: true })
@@ -388,7 +394,7 @@ export default class App extends Component {
             </div>
             {this.renderOtherFee({ khoan: 'CỌC', tien: bill.deposit })}
             {this.renderOtherFee(bill.khac)}
-            {this.renderOtherFee(bill.chi, true)}
+            {this.renderOtherFee(bill.chi)}
             <div class="total">
               <div>TIỀN RÁC</div>
               <div>{bill.rac.toLocaleString('vi')} đ</div>
@@ -416,7 +422,7 @@ export default class App extends Component {
     return (
       <div class="app">
         <h2>{mess}</h2>
-        {this.renderButtons(['purchase-confirm', 'purchase-cancel'], 'large', ['OK', 'HỦY'])}
+        {this.renderButtons(['purchase-cash', 'purchase-bank', 'purchase-cancel'], 'large', ['TIỀN MẶT', 'C. KHOẢN', 'HỦY'])}
       </div>
     )
   }
@@ -528,24 +534,26 @@ export default class App extends Component {
       label:
         bill.deposit || bill.tongcong
           ? bill.thanhtoan
-            ? `ĐÃ THU${bill.out ? ' (TRỐNG)' : ''}`
+            ? `ĐÃ ${bill.bank ? 'NHẬN CHUYỂN KHOẢN' : 'THU TIỀN MẶT'}${bill.out ? ' (TRỐNG)' : ''}`
             : bill.out
             ? 'BẤM ĐỂ THU VÀ TRẢ PHÒNG'
             : 'BẤM ĐỂ THU'
           : 'CHƯA CÓ DỮ LIỆU',
-      className: bill.tongcong ? (bill.thanhtoan ? (bill.out ? 'out' : 'done') : '') : 'invalid',
+      className: bill.tongcong ? (bill.thanhtoan ? (bill.out ? 'out' : `done${bill.bank ? ' bank' : ''}`) : '') : 'invalid',
       valid: bill.deposit || bill.tongcong,
       disabled: !bill.tongcong || (bill.tongcong && bill.thanhtoan),
     }
   }
 
   calculateTotalAmount = () => {
-    const amount = { in: 0, out: 0, inTotal: 0, outTotal: 0 }
+    const amount = { in: 0, out: 0, inTotal: 0, outTotal: 0, bank: 0, cash: 0 }
     this.state.datas.map(data => {
       data.bills.map(bill => {
         if (bill.thanhtoan) {
           if (bill.out) amount.out += bill.tongcong
           else amount.in += bill.tongcong
+          if (bill.bank) amount.bank += bill.tongcong
+          else amount.cash += bill.tongcong
         }
         if (bill.out) amount.outTotal += bill.tongcong
         else amount.inTotal += bill.tongcong
@@ -711,15 +719,18 @@ export default class App extends Component {
       'TC phải thu',
       'TC đã thu',
       'TC còn phải thu',
+      'T.Mặt đã thu',
+      'C.Khoản đã nhận',
     ]
-    const value = ['inTotal', 'in', 'inLeft', 'outTotal', 'out', 'outLeft', 'grandTotal', 'current', 'totalLeft']
+    const value = ['inTotal', 'in', 'inLeft', 'outTotal', 'out', 'outLeft', 'grandTotal', 'current', 'totalLeft', 'cash', 'bank']
+    const calculateTotalAmount = this.calculateTotalAmount()
     return (
       <div class="general-income">
         {labels.map((label, idx) => {
           return (
             <div>
               <h3>{label}</h3>
-              <h3>{this.calculateTotalAmount()[value[idx]].toLocaleString('vi')}</h3>
+              <h3>{calculateTotalAmount[value[idx]].toLocaleString('vi')}</h3>
             </div>
           )
         })}
@@ -859,9 +870,9 @@ export default class App extends Component {
           {this.renderInputThuChiKhac()}
         </div>
         {this.renderButtons(
-          ['update-confirm', 'paid-cancel', billOutBtnInfo.name, 'update-cancel'],
-          ['', paidCancelBtnClass, '', ''],
-          ['CẬP NHẬT', 'HỦY THANH TOÁN', billOutBtnInfo.text, 'QUAY LẠI'],
+          ['update-confirm', 'change-method', 'paid-cancel', billOutBtnInfo.name, 'update-cancel'],
+          ['', '', paidCancelBtnClass, '', ''],
+          ['CẬP NHẬT', 'ĐỔI HÌNH THỨC THANH TOÁN', 'HỦY THANH TOÁN', billOutBtnInfo.text, 'QUAY LẠI'],
         )}
       </div>
     )
@@ -923,7 +934,6 @@ export default class App extends Component {
   calculateGrandTotal = datas => {
     const grandTotal = {
       tiennha: 0,
-      phaithu: 0,
       dientieuthu: 0,
       tiendien: 0,
       nuoctieuthu: 0,
@@ -932,10 +942,17 @@ export default class App extends Component {
       khac: 0,
       chi: 0,
       coc: 0,
+      tienmat: 0,
+      chuyenkhoan: 0,
+      tongthu: 0,
     }
     datas.map(data => {
       data.bills.map(bill => {
-        grandTotal.phaithu += bill.tongcong
+        if (bill.thanhtoan) {
+          if (bill.bank) grandTotal.chuyenkhoan += bill.tongcong
+          else grandTotal.tienmat += bill.tongcong
+        }
+        grandTotal.tongthu += bill.tongcong
         grandTotal.tiendien += bill.dien.thanhtien
         grandTotal.tiennuoc += bill.nuoc.thanhtien
         grandTotal.nuoctieuthu += bill.nuoc.tieuthu
@@ -957,6 +974,11 @@ export default class App extends Component {
   }
 
   renderThuchiReport = datas => {
+    const tongThuChi = this.calculateTongThuchi()
+    const grandTotal = this.calculateGrandTotal(datas)
+    const tongCongSauCung = tongThuChi + grandTotal.tongthu
+    const tongChuyenKhoan = grandTotal.chuyenkhoan
+    const tongTienMat = tongCongSauCung - tongChuyenKhoan
     return (
       <table class="tg small">
         <tr class="text-center bold header">
@@ -980,11 +1002,23 @@ export default class App extends Component {
         })}
         <tr class="bold header">
           <td class="pad-right-8px">TỔNG CỘNG THU CHI</td>
-          <td class="right pad-left-8px">{this.calculateTongThuchi().toLocaleString('vi')}</td>
+          <td class="right pad-left-8px">{tongThuChi.toLocaleString('vi')}</td>
+        </tr>
+        <tr class="bold header">
+          <td class="pad-right-8px">TỔNG CỘNG THU TIỀN PHÒNG</td>
+          <td class="right pad-left-8px">{grandTotal.tongthu.toLocaleString('vi')}</td>
         </tr>
         <tr class="bold header">
           <td class="pad-right-8px">TỔNG CỘNG SAU CÙNG</td>
-          <td class="right pad-left-8px">{(this.calculateTongThuchi() + this.calculateGrandTotal(datas).phaithu).toLocaleString('vi')}</td>
+          <td class="right pad-left-8px">{tongCongSauCung.toLocaleString('vi')}</td>
+        </tr>
+        <tr class="bold header">
+          <td class="pad-right-8px">TỔNG TIỀN MẶT</td>
+          <td class="right pad-left-8px">{tongTienMat.toLocaleString('vi')}</td>
+        </tr>
+        <tr class="bold header">
+          <td class="pad-right-8px">TỔNG CHUYỂN KHOẢN</td>
+          <td class="right pad-left-8px">{tongChuyenKhoan.toLocaleString('vi')}</td>
         </tr>
       </table>
     )
@@ -1003,6 +1037,7 @@ export default class App extends Component {
   renderTiennhaReport = datas => {
     const flaternBills = []
     datas.map(data => data.bills.map(bill => flaternBills.push(bill)))
+    const calculateGrandTotal = this.calculateGrandTotal(datas)
     return (
       <table class="tg">
         <tr class="text-center bold header">
@@ -1019,7 +1054,7 @@ export default class App extends Component {
           <td colspan="2" class="no-print" onClick={() => window.print()}>
             <h4>In</h4>
           </td>
-          <td colspan="2" class="no-print" onClick={() => this.setState({ report: false })}>
+          <td colspan="3" class="no-print" onClick={() => this.setState({ report: false })}>
             <h4>Quay lại</h4>
           </td>
         </tr>
@@ -1030,8 +1065,9 @@ export default class App extends Component {
           <td colspan="5">NƯỚC</td>
           <td rowspan="3">RÁC</td>
           <td colspan="5">KHÁC</td>
-          <td rowspan="3">CỘNG</td>
-          <td rowspan="3">XÁC NHẬN</td>
+          <td rowspan="3">TỔNG</td>
+          <td rowspan="3">TIỀN MẶT</td>
+          <td rowspan="3">C. KHOẢN</td>
         </tr>
         <tr class="bold">
           <td rowspan="2">Kỳ trước</td>
@@ -1076,45 +1112,49 @@ export default class App extends Component {
               <td class="right bold">{d.khac.tien ? d.khac.tien.toLocaleString('vi') : 0}</td>
               <td class="right bold">{d.deposit ? d.deposit.toLocaleString('vi') : 0}</td>
               <td class="right bold">{d.tongcong.toLocaleString('vi')}</td>
-              <td />
+              <td class="right bold">{d.thanhtoan && !d.bank ? d.tongcong.toLocaleString('vi') : 0}</td>
+              <td class="right bold">{d.thanhtoan && d.bank ? d.tongcong.toLocaleString('vi') : 0}</td>
             </tr>
           )
         })}
         <tr class="bold header">
           <td colspan="2">
-            <h4>{this.calculateGrandTotal(datas).tiennha.toLocaleString('vi')}</h4>
+            <h4>{calculateGrandTotal.tiennha.toLocaleString('vi')}</h4>
           </td>
           <td colspan="2" />
           <td>
-            <h4>{this.calculateGrandTotal(datas).dientieuthu.toLocaleString('vi')}</h4>
+            <h4>{calculateGrandTotal.dientieuthu.toLocaleString('vi')}</h4>
           </td>
           <td colspan="2">
-            <h4>{this.calculateGrandTotal(datas).tiendien.toLocaleString('vi')}</h4>
+            <h4>{calculateGrandTotal.tiendien.toLocaleString('vi')}</h4>
           </td>
           <td colspan="2" />
           <td>
-            <h4>{this.calculateGrandTotal(datas).nuoctieuthu.toLocaleString('vi')}</h4>
+            <h4>{calculateGrandTotal.nuoctieuthu.toLocaleString('vi')}</h4>
           </td>
           <td colspan="2">
-            <h4>{this.calculateGrandTotal(datas).tiennuoc.toLocaleString('vi')}</h4>
+            <h4>{calculateGrandTotal.tiennuoc.toLocaleString('vi')}</h4>
           </td>
           <td>
-            <h4>{this.calculateGrandTotal(datas).rac.toLocaleString('vi')}</h4>
+            <h4>{calculateGrandTotal.rac.toLocaleString('vi')}</h4>
           </td>
           <td colspan="2">
-            <h4>{this.calculateGrandTotal(datas).chi.toLocaleString('vi')}</h4>
+            <h4>{calculateGrandTotal.chi.toLocaleString('vi')}</h4>
           </td>
           <td colspan="2">
-            <h4>{this.calculateGrandTotal(datas).khac.toLocaleString('vi')}</h4>
+            <h4>{calculateGrandTotal.khac.toLocaleString('vi')}</h4>
           </td>
           <td>
-            <h4>{this.calculateGrandTotal(datas).coc.toLocaleString('vi')}</h4>
+            <h4>{calculateGrandTotal.coc.toLocaleString('vi')}</h4>
           </td>
           <td>
-            <h4>{this.calculateGrandTotal(datas).phaithu.toLocaleString('vi')}</h4>
+            <h4>{calculateGrandTotal.tongthu.toLocaleString('vi')}</h4>
           </td>
-          <td onClick={() => this.setState({ report: false })}>
-            <h4 class="no-print">{'<<<'}</h4>
+          <td>
+            <h4>{calculateGrandTotal.tienmat.toLocaleString('vi')}</h4>
+          </td>
+          <td>
+            <h4>{calculateGrandTotal.chuyenkhoan.toLocaleString('vi')}</h4>
           </td>
         </tr>
       </table>

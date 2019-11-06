@@ -225,6 +225,9 @@ button.invalid {
 button.done {
   background-color: green;
 }
+button.bank {
+  text-decoration: underline;
+}
 button.out {
   background-color: rgb(0, 70, 0);
 }
