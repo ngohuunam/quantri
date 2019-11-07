@@ -54,7 +54,8 @@ export default class App extends Component {
   componentDidMount() {
     const token = localStorage.getItem('adminToken')
     if (token) {
-      this.setState({ token: token }).then(_a => this.login(), reason => console.log(reason))
+      this.setState({ token: token })
+      this.login()
     }
   }
 
