@@ -54,7 +54,7 @@ input {
   border-bottom: 1px solid rgb(204, 204, 230);
   background: none;
   outline: none;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
   transition: all 0.1s ease-in-out;
 }
 input.small {
@@ -340,8 +340,8 @@ button.large {
   margin-bottom: 16px;
 }
 .flex.col > div > label {
-  font-size: 1.3rem;
-  flex: 0 0 40%;
+  font-size: 1.2rem;
+  flex: 0 0 45%;
 }
 .flex.col > div > div {
   flex: 0 0 60%;

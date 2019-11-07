@@ -23,6 +23,7 @@ const state = {
   dien: '',
   nuoc: '',
   nha: '',
+  themNguoi: '',
   onlyDeposit: false,
   deposit: '',
   thukhac: '',
@@ -33,7 +34,7 @@ const state = {
   thuchi: [],
   thuchiState: [],
   thuchiClone: [],
-  ver: '20191107.1450',
+  ver: '20191107.1921',
   sv: '',
 }
 

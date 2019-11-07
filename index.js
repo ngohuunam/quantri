@@ -68,6 +68,7 @@ export default class App extends Component {
       case 'dien':
       case 'nuoc':
       case 'nha':
+      case 'themNguoi':
       case 'deposit':
       case 'tienthukhac':
       case 'tienchi':
@@ -98,7 +99,19 @@ export default class App extends Component {
         this.setState({ report: true })
         break
       case 'show-all-btn':
-        this.setState({ showAll: true })
+        this.setState({
+          showAll: true,
+          update: false,
+          chi: '',
+          tienchi: '',
+          thukhac: '',
+          tienthukhac: '',
+          billIndex: 0,
+          dien: '',
+          nuoc: '',
+          nha: '',
+          themNguoi: '',
+        })
         break
       case 'login-btn':
       case 'dialog-ok-btn':
@@ -118,6 +131,12 @@ export default class App extends Component {
         break
       case 'purchase-bank-btn':
         this.sendAction(this.state.confirm, { bank: true })
+        break
+      case 'keep-key-return-btn':
+        this.sendAction('key-return')
+        break
+      case 'keep-key-apply-btn':
+        this.sendAction('key-apply')
         break
       case 'purchase-cancel-btn':
         this.setState({ confirm: '', billIndex: 0 })
@@ -142,7 +161,18 @@ export default class App extends Component {
         this.sendActionUpdate('update')
         break
       case 'update-cancel-btn':
-        this.setState({ update: false, chi: '', tienchi: '', thukhac: '', tienthukhac: '', billIndex: 0 })
+        this.setState({
+          update: false,
+          chi: '',
+          tienchi: '',
+          thukhac: '',
+          tienthukhac: '',
+          billIndex: 0,
+          dien: '',
+          nuoc: '',
+          nha: '',
+          themNguoi: '',
+        })
         break
       case 'paid-cancel-btn':
         this.sendAction('paid-cancel', {}, 'Đang Hủy Thanh toán ...')
@@ -166,7 +196,7 @@ export default class App extends Component {
   }
 
   sendActionUpdate = (action, preout) => {
-    const props = ['dien', 'nuoc', 'nha']
+    const props = ['dien', 'nuoc', 'nha', 'themNguoi']
     const body = {}
     props.map(prop => {
       if (this.state[prop] !== '') body[prop] = this.state[prop]
@@ -443,11 +473,18 @@ export default class App extends Component {
   renderButton = (name, className, text, action, isDisabled) => {
     if (className === 'hidden') return
     const onClickAction = action || this.btnClick
-    return (
-      <button name={name + '-btn'} class={className} onClick={onClickAction} disabled={isDisabled}>
-        {text}
-      </button>
-    )
+    if (className)
+      return (
+        <button name={name + '-btn'} class={className} onClick={onClickAction} disabled={isDisabled}>
+          {text}
+        </button>
+      )
+    else
+      return (
+        <button name={name + '-btn'} onClick={onClickAction} disabled={isDisabled}>
+          {text}
+        </button>
+      )
   }
 
   renderButtons = (names, classNames, texts, actions, isDisableds) => {
@@ -478,6 +515,7 @@ export default class App extends Component {
         dien: bill.dien.sokynay || bill.dien.sokytruoc,
         nuoc: bill.nuoc.sokynay || bill.nuoc.sokytruoc,
         nha: '',
+        themNguoi: bill.themNguoi ? bill.themNguoi.soNguoi : 0,
         chi: bill.chi.khoan,
         tienchi: bill.chi.tien,
         thukhac: bill.khac.khoan,
@@ -866,26 +904,42 @@ export default class App extends Component {
   }
 
   renderBillUpdate = (roomIdx, billIdx) => {
-    const billOutBtnInfo = this.state.datas[roomIdx].bills[billIdx].out
-      ? { name: 'bill-out-cancel', text: 'HUỶ TRẢ PHÒNG' }
-      : { name: 'bill-out', text: 'TRẢ PHÒNG' }
-    const paidCancelBtnClass = this.state.datas[roomIdx].bills[billIdx].thanhtoan ? '' : 'hidden'
+    const _bill = this.state.datas[roomIdx].bills[billIdx]
+    const billOutBtnInfo = _bill.out ? { name: 'bill-out-cancel', text: 'HUỶ TRẢ PHÒNG' } : { name: 'bill-out', text: 'TRẢ PHÒNG' }
+    const paidCancelBtnClass = _bill.thanhtoan ? '' : 'hidden'
+    const keepKeyExist = this.state.datas.some(_room => _room.bills.some(_bill => _bill.giuKhoa))
+    const isDisabled = keepKeyExist && !_bill.giuKhoa
+    console.log('keepKeyExist: ')
+    console.log(keepKeyExist)
+    const toggleKeepKeyBtnInfo = _bill.giuKhoa
+      ? { name: 'keep-key-return', text: 'THU LẠI CHÌA KHÓA' }
+      : { name: 'keep-key-apply', text: 'GỬI CHÌA KHÓA' }
     return (
       <div class="app">
         <h1> Cập Nhật </h1>
         <div class="flex col">
           {this.renderInputs(
-            ['Điện', 'Nước', 'Nhà'],
-            ['number', 'number', 'number'],
-            ['dien', 'nuoc', 'nha'],
-            ['Số điện', 'Số nước', `Tiền nhà`],
+            ['Điện', 'Nước', 'Nhà', 'Thêm Người'],
+            ['number', 'number', 'number', 'number'],
+            ['dien', 'nuoc', 'nha', 'themNguoi'],
+            ['Số điện', 'Số nước', `Tiền nhà`, 'Số người ở thêm'],
           )}
           {this.renderInputThuChiKhac()}
         </div>
         {this.renderButtons(
-          ['update-confirm', 'change-method', 'paid-cancel', billOutBtnInfo.name, 'update-cancel'],
-          ['', '', paidCancelBtnClass, '', ''],
-          ['CẬP NHẬT', 'ĐỔI HÌNH THỨC THANH TOÁN', 'HỦY THANH TOÁN', billOutBtnInfo.text, 'QUAY LẠI'],
+          ['update-confirm', 'change-method', 'paid-cancel', toggleKeepKeyBtnInfo.name, billOutBtnInfo.name, 'update-cancel', 'show-all'],
+          ['', '', paidCancelBtnClass, '', '', '', ''],
+          [
+            'CẬP NHẬT',
+            'ĐỔI HÌNH THỨC THANH TOÁN',
+            'HỦY THANH TOÁN',
+            toggleKeepKeyBtnInfo.text,
+            billOutBtnInfo.text,
+            'QUAY LẠI',
+            'DANH SÁCH PHÒNG',
+          ],
+          false,
+          [false, false, false, isDisabled],
         )}
       </div>
     )
