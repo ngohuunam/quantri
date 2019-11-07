@@ -55,7 +55,7 @@ export default class App extends Component {
     const token = localStorage.getItem('adminToken')
     if (token) {
       this.setState({ token: token })
-      this.login()
+      this.login(token)
     }
   }
 
@@ -257,7 +257,8 @@ export default class App extends Component {
   handleErrRes = res => {
     switch (res.status) {
       case 405:
-        this.setState({ notice: 'Sai Mật khẩu' })
+        this.setState({ datas: [], token: '', notice: 'Sai Mật khẩu' })
+        localStorage.removeItem('adminToken')
         break
       case 406:
         this.setState({ datas: [], token: '', notice: 'Auth reject' })
@@ -295,10 +296,10 @@ export default class App extends Component {
     })
   }
 
-  login = () => {
+  login = _token => {
     if (this.state.sthChanged) {
       const { pass, token, month, year } = this.state
-      const body = { room: '123', pass: pass, token: token, month: month, year: year }
+      const body = { room: '123', pass: pass, token: _token || token, month: month, year: year }
       console.log('login body', body)
       this.setState({ loading: true, notice: this.state.token ? 'Đang tải dữ liệu...' : 'Đang đăng nhập...' })
       this.fetchServer(body, true)
