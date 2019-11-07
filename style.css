@@ -244,7 +244,7 @@ button.invalid:disabled {
   cursor: not-allowed;
   pointer-events: none;
   box-shadow: none;
-  color: white;
+  /* color: white; */
 }
 button.large {
   /* width: 60%; */

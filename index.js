@@ -349,9 +349,19 @@ export default class App extends Component {
       )
   }
 
+  renderMorePeople = themNguoi => {
+    if (themNguoi && themNguoi.tongTien)
+      return (
+        <div class="total">
+          <div>THÊM {themNguoi.soNguoi} NGƯỜI</div>
+          <div>{themNguoi.tongTien.toLocaleString('vi')} đ </div>
+        </div>
+      )
+  }
+
   renderBill = bill => {
     if (!bill) return <h1>PHÒNG TRỐNG</h1>
-    else if (bill.deposit || bill.tongcong) {
+    else {
       return (
         <div class="bill">
           <div class="table">
@@ -404,6 +414,8 @@ export default class App extends Component {
               <div>TIỀN NHÀ</div>
               <div>{bill.nha.toLocaleString('vi')} đ</div>
             </div>
+            {this.renderMorePeople(bill.themNguoi)}
+            {this.renderOtherFee({ khoan: 'GIỮ CHÌA KHÓA', tien: bill.giuKhoa })}
             <div>
               <div class="flex space-between bold grandTotal">
                 <div>T.CỘNG: </div>
@@ -413,7 +425,7 @@ export default class App extends Component {
           </div>
         </div>
       )
-    } else return <h1>CHƯA CÓ DỮ LIỆU!!</h1>
+    }
   }
 
   renderConfirm = d => {
