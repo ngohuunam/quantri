@@ -344,7 +344,7 @@ button.large {
   flex: 0 0 45%;
 }
 .flex.col > div > div {
-  flex: 0 0 60%;
+  flex: 0 0 55%;
 }
 
 .space-between {
