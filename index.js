@@ -23,10 +23,7 @@ export default class App extends Component {
     const currentYear = DATE.getFullYear()
     let currentMonth = toDay > 5 ? monthIndex : monthIndex - 1
     let MONTHS
-    if (currentMonth < 1) {
-      year = year - 1
-      currentMonth = 12
-    }
+    if (currentMonth < 1) currentMonth = 12
     console.log('currentMonth', currentMonth)
     if (year === 2018) MONTHS = _MONTHS.slice(8, 12)
     else if (year === currentYear) MONTHS = _MONTHS.slice(0, currentMonth)
@@ -37,18 +34,17 @@ export default class App extends Component {
 
   componentWillMount = () => {
     const DATE = new Date()
-    const YEAR = DATE.getFullYear()
+    let YEAR = DATE.getFullYear()
     const M = DATE.getMonth()
     let y = 2019
-    if (!M) y++
+    if (M === 0) --YEAR
     const YEARS = [2018]
     while (y <= YEAR) {
       YEARS.unshift(y)
       y++
     }
     this.setState({ years: YEARS, pass: pw })
-    if (M) this.calculateMonths(YEAR)
-    else this.calculateMonths(YEAR - 1)
+    this.calculateMonths(YEAR)
   }
 
   componentDidMount() {
@@ -1019,16 +1015,16 @@ export default class App extends Component {
           if (bill.bank) grandTotal.chuyenkhoan += bill.tongcong
           else grandTotal.tienmat += bill.tongcong
         }
-        grandTotal.tongthu += bill.tongcong
-        grandTotal.tiendien += bill.dien.thanhtien
-        grandTotal.tiennuoc += bill.nuoc.thanhtien
-        grandTotal.nuoctieuthu += bill.nuoc.tieuthu
-        grandTotal.dientieuthu += bill.dien.tieuthu
-        grandTotal.tiennha += bill.nha
-        grandTotal.rac += bill.rac
-        grandTotal.khac += bill.khac.tien
-        grandTotal.chi += bill.chi && bill.chi.tien ? bill.chi.tien : 0
-        grandTotal.coc += bill.deposit ? bill.deposit : 0
+        grandTotal.tongthu += bill.tongcong || 0
+        grandTotal.tiendien += bill.dien.thanhtien || 0
+        grandTotal.tiennuoc += bill.nuoc.thanhtien || 0
+        grandTotal.nuoctieuthu += bill.nuoc.tieuthu || 0
+        grandTotal.dientieuthu += bill.dien.tieuthu || 0
+        grandTotal.tiennha += bill.nha || 0
+        grandTotal.rac += bill.rac || 0
+        grandTotal.khac += bill.khac && bill.khac.tien && bill.khac.tien !== 0 ? bill.khac.tien : 0
+        grandTotal.chi += bill.chi && bill.chi.tien && bill.chi.tien !== 0 ? bill.chi.tien : 0
+        grandTotal.coc += bill.deposit || 0
       })
     })
     return grandTotal
