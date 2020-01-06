@@ -34,7 +34,7 @@ const state = {
   thuchi: [],
   thuchiState: [],
   thuchiClone: [],
-  ver: '20200106.2157',
+  ver: '20200106.2217',
   sv: '',
 }
 

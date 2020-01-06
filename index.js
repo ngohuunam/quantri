@@ -32,7 +32,7 @@ export default class App extends Component {
     this.setState({ month: currentMonth, year: year, months: MONTHS.reverse(), sthChanged: true })
   }
 
-  componentWillMount = () => {
+  componentDidMount() {
     const DATE = new Date()
     let YEAR = DATE.getFullYear()
     const M = DATE.getMonth()
@@ -43,16 +43,25 @@ export default class App extends Component {
       YEARS.unshift(y)
       y++
     }
-    this.setState({ years: YEARS, pass: pw })
-    this.calculateMonths(YEAR)
-  }
-
-  componentDidMount() {
-    const token = localStorage.getItem('adminToken')
-    if (token) {
-      this.setState({ token: token })
-      this.login(token)
-    }
+    this.setState(
+      _prevState => {
+        return { years: YEARS, pass: pw }
+      },
+      () => {
+        this.calculateMonths(YEAR)
+        const token = localStorage.getItem('adminToken')
+        if (token) {
+          this.setState(
+            _prevState => {
+              return { token: token }
+            },
+            () => {
+              this.login(token)
+            },
+          )
+        }
+      },
+    )
   }
 
   onInput = event => {
