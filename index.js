@@ -21,7 +21,7 @@ export default class App extends Component {
     const toDay = DATE.getDate()
     const monthIndex = DATE.getMonth()
     const currentYear = DATE.getFullYear()
-    let currentMonth = toDay > 5 ? monthIndex : monthIndex - 1
+    let currentMonth = toDay > 0 ? monthIndex : monthIndex - 1
     let MONTHS
     if (currentMonth < 1) currentMonth = 12
     console.log('currentMonth', currentMonth)
